@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - Orbit</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../styling/base.css">
+    <link rel="stylesheet" href="../styling/components.css">
+    <link rel="stylesheet" href="../styling/global.css">
+    
+    <!-- Component Loader Script -->
+    <script src="../Scripts/component-loader.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛸%3C/text%3E%3C/svg%3E">
+    
+    <!-- Theme script (inline for performance) -->
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const theme = savedTheme || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <!-- Navigation Component -->
+        <div id="navbar-container" data-component="../components/navbar.html"></div>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <!-- Header Section -->
+                <section class="section-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">Teacher Dashboard</h1>
+                            <p class="text-secondary">Welcome back, <span id="teacher-name" class="text-primary font-medium">Loading...</span></p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="btn btn-outline" id="export-data-btn">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Export Data
+                            </button>
+                            <button class="btn btn-primary" id="add-student-btn">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Add Student
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Stats Cards -->
+                <section class="section-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Total Students</p>
+                                        <p class="text-2xl font-bold" id="total-students">-</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">👥</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Active Classes</p>
+                                        <p class="text-2xl font-bold" id="active-classes">-</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">📚</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Avg Engagement</p>
+                                        <p class="text-2xl font-bold text-blue" id="avg-engagement">-%</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">📊</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Pending Reviews</p>
+                                        <p class="text-2xl font-bold text-warning" id="pending-reviews">-</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">⏳</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Main Dashboard Content -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Left Column - Student List & Analytics -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Recent Student Activity -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="card-title">Recent Student Activity</h3>
+                                    <select id="activity-filter" class="form-select" style="width: auto;">
+                                        <option value="all">All Activities</option>
+                                        <option value="assignments">Assignments</option>
+                                        <option value="quizzes">Quizzes</option>
+                                        <option value="discussions">Discussions</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="student-activity" class="space-y-4">
+                                    <!-- Activity items will be loaded dynamically -->
+                                    <div class="text-center py-8 text-secondary">
+                                        <div class="text-4xl mb-3">📊</div>
+                                        <p>Loading student activity...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Engagement Analytics Chart -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Engagement Trends</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="engagement-chart" class="h-64 flex items-center justify-center text-secondary">
+                                    <div class="text-center">
+                                        <div class="text-4xl mb-3">📈</div>
+                                        <p>Engagement chart will load here</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Quick Actions & Class Management -->
+                    <div class="space-y-6">
+                        <!-- Quick Actions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Quick Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="space-y-3">
+                                    <button class="btn btn-outline w-full text-left" id="create-assignment-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        Create Assignment
+                                    </button>
+                                    <button class="btn btn-outline w-full text-left" id="create-quiz-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Create Quiz
+                                    </button>
+                                    <button class="btn btn-outline w-full text-left" id="start-discussion-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h8z"/>
+                                        </svg>
+                                        Start Discussion
+                                    </button>
+                                    <button class="btn btn-outline w-full text-left" id="grade-submissions-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                        </svg>
+                                        Grade Submissions
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Class Management -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">My Classes</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="class-list" class="space-y-3">
+                                    <!-- Classes will be loaded dynamically -->
+                                    <div class="text-center py-4 text-secondary">
+                                        <div class="text-3xl mb-2">📚</div>
+                                        <p class="text-sm">Loading classes...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Alerts -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Alerts & Notifications</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="alerts-list" class="space-y-3">
+                                    <!-- Alerts will be loaded dynamically -->
+                                    <div class="text-center py-4 text-secondary">
+                                        <div class="text-3xl mb-2">🔔</div>
+                                        <p class="text-sm">No new alerts</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer Component -->
+        <div id="footer-container" data-component="../components/footer.html"></div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="../firebase/app.js"></script>
+    <script src="../firebase/auth.js"></script>
+    
+    <!-- Component Scripts -->
+    <script src="../components/navbar.js"></script>
+    <script src="../components/footer.js"></script>
+    
+    <!-- Teacher Dashboard Script -->
+    <script type="module" src="../Scripts/teacher-dashboard.js"></script>
+</body>
+</html>

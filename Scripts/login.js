@@ -51,6 +51,7 @@ function initializeLoginPage() {
     // Add validation rules
     loginValidator.addValidator('email', AuthUtils.validateEmail, 'Please enter a valid email address');
     loginValidator.addValidator('password', (password) => password.length >= 6, 'Password must be at least 6 characters');
+    loginValidator.addValidator('role', (role) => ['student', 'teacher', 'admin'].includes(role), 'Please select your role');
     
     signupValidator.addValidator('name', AuthUtils.validateDisplayName, 'Name must be at least 2 characters');
     signupValidator.addValidator('email', AuthUtils.validateEmail, 'Please enter a valid email address');
@@ -58,6 +59,7 @@ function initializeLoginPage() {
     signupValidator.addValidator('confirmPassword', (confirmPwd) => {
         return confirmPwd === signupPassword.value;
     }, 'Passwords do not match');
+    signupValidator.addValidator('role', (role) => ['student', 'teacher', 'admin'].includes(role), 'Please select your role');
     
     resetValidator.addValidator('email', AuthUtils.validateEmail, 'Please enter a valid email address');
     
@@ -174,6 +176,7 @@ function initializeLoginPage() {
         
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+        const selectedRole = document.getElementById('login-role').value;
         const rememberMe = document.getElementById('remember-me').checked;
         
         const loginButton = document.getElementById('login-submit');
@@ -183,6 +186,17 @@ function initializeLoginPage() {
             const result = await window.authManager.signIn(email, password);
             
             if (result.success) {
+                // Verify the user's stored role matches the selected role
+                const storedRole = await AuthUtils.getUserRole(result.user);
+                
+                if (storedRole !== selectedRole) {
+                    AuthUtils.showToast(`Access denied: Your account role is '${storedRole}', not '${selectedRole}'`, 'error');
+                    // Clear the form
+                    document.getElementById('login-password').value = '';
+                    document.getElementById('login-role').value = '';
+                    return;
+                }
+                
                 AuthUtils.showToast('Successfully signed in! Redirecting...', 'success');
                 
                 // Save remember me preference
@@ -192,7 +206,7 @@ function initializeLoginPage() {
                 
                 // Redirect after short delay
                 setTimeout(() => {
-                    AuthUtils.redirectToDashboard(result.user);
+                    AuthUtils.redirectToDashboard(result.user, selectedRole);
                 }, 1500);
             } else {
                 AuthUtils.showToast(result.error, 'error');
@@ -221,6 +235,7 @@ function initializeLoginPage() {
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
         const confirmPwd = document.getElementById('confirm-password').value;
+        const selectedRole = document.getElementById('signup-role').value;
         const termsAgreed = document.getElementById('terms-agreement').checked;
         
         if (password !== confirmPwd) {
@@ -240,12 +255,20 @@ function initializeLoginPage() {
             const result = await window.authManager.signUp(email, password, name);
             
             if (result.success) {
-                AuthUtils.showToast(result.message, 'success');
+                // Set the user's role in Firestore
+                await AuthUtils.setUserRole(result.user, selectedRole);
+                
+                const roleMessage = selectedRole === 'admin' ? 
+                    'Account created! Admin access requires approval. Please contact existing administrators.' :
+                    'Account created successfully!';
+                
+                AuthUtils.showToast(`${roleMessage} Please sign in with your new account.`, 'success');
                 
                 // Switch to login form after successful signup
                 setTimeout(() => {
                     showLoginForm();
                     document.getElementById('login-email').value = email;
+                    document.getElementById('login-role').value = selectedRole;
                 }, 2000);
             } else {
                 AuthUtils.showToast(result.error, 'error');
@@ -293,14 +316,28 @@ function initializeLoginPage() {
     });
     
     // Google Sign In/Up
-    async function handleGoogleAuth() {
+    async function handleGoogleAuth(isSignup = false) {
         try {
             const result = await window.authManager.signInWithGoogle();
             
             if (result.success) {
-                AuthUtils.showToast('Successfully signed in with Google!', 'success');
+                let userRole = await AuthUtils.getUserRole(result.user);
+                
+                // If this is a new user (signup) or user has no role, set default role
+                if (!userRole || (isSignup && userRole === 'student')) {
+                    // For Google signup, default to student role
+                    // In a real application, you might want to show a role selection modal
+                    const defaultRole = 'student';
+                    await AuthUtils.setUserRole(result.user, defaultRole);
+                    userRole = defaultRole;
+                    
+                    AuthUtils.showToast(`Welcome to Orbit! You've been registered as a ${defaultRole}. Contact an administrator to change your role if needed.`, 'success');
+                } else {
+                    AuthUtils.showToast('Successfully signed in with Google!', 'success');
+                }
+                
                 setTimeout(() => {
-                    AuthUtils.redirectToDashboard(result.user);
+                    AuthUtils.redirectToDashboard(result.user, userRole);
                 }, 1500);
             } else {
                 AuthUtils.showToast(result.error, 'error');
@@ -311,8 +348,8 @@ function initializeLoginPage() {
         }
     }
     
-    googleSignin.addEventListener('click', handleGoogleAuth);
-    googleSignup.addEventListener('click', handleGoogleAuth);
+    googleSignin.addEventListener('click', () => handleGoogleAuth(false));
+    googleSignup.addEventListener('click', () => handleGoogleAuth(true));
     
     // Load saved form data
     const savedLoginData = AuthUtils.loadFormData('login');

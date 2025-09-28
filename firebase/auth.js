@@ -1,5 +1,178 @@
-// Authentication Utilities and Helpers
+// Authentication Utilities with Role-Based Access Control
 class AuthUtils {
+    // User roles hierarchy
+    static ROLES = {
+        STUDENT: 'student',
+        TEACHER: 'teacher', 
+        ADMIN: 'admin'
+    };
+
+    // Role hierarchy for permissions (higher number = more permissions)
+    static ROLE_HIERARCHY = {
+        student: 1,
+        teacher: 2,
+        admin: 3
+    };
+
+    // Dashboard routes for each role
+    static DASHBOARD_ROUTES = {
+        student: '/pages/student-dashboard.html',
+        teacher: '/pages/teacher-dashboard.html',
+        admin: '/pages/admin-dashboard.html'
+    };
+
+    // Get user role from Firestore
+    static async getUserRole(user) {
+        try {
+            if (!user || !user.uid) return 'student';
+            
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                return userDoc.data().role || 'student';
+            }
+            
+            // Default role for new users
+            return 'student';
+        } catch (error) {
+            console.error('Error getting user role:', error);
+            return 'student';
+        }
+    }
+
+    // Set user role in Firestore
+    static async setUserRole(user, role) {
+        try {
+            if (!user || !user.uid) {
+                throw new Error('Invalid user object');
+            }
+            
+            if (!['student', 'teacher', 'admin'].includes(role)) {
+                throw new Error('Invalid role specified');
+            }
+            
+            const userRef = doc(db, 'users', user.uid);
+            await setDoc(userRef, {
+                email: user.email,
+                displayName: user.displayName || user.email.split('@')[0],
+                role: role,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            }, { merge: true });
+            
+            console.log(`User role set to: ${role} for user: ${user.email}`);
+            return true;
+        } catch (error) {
+            console.error('Error setting user role:', error);
+            throw error;
+        }
+    }
+
+    // Check if user has required role or higher
+    static hasRoleAccess(userRole, requiredRole) {
+        if (!userRole || !requiredRole) return false;
+        
+        const userLevel = this.ROLE_HIERARCHY[userRole] || 0;
+        const requiredLevel = this.ROLE_HIERARCHY[requiredRole] || 999;
+        
+        return userLevel >= requiredLevel;
+    }
+
+    // Get allowed navigation items based on user role
+    static getNavItemsForRole(userRole) {
+        const baseItems = [
+            { href: '/', label: 'Home', page: 'home', roles: ['student', 'teacher', 'admin'] },
+            { href: '/pages/profile.html', label: 'Profile', page: 'profile', roles: ['student', 'teacher', 'admin'] }
+        ];
+
+        const roleSpecificItems = [
+            { href: '/pages/student-dashboard.html', label: 'My Dashboard', page: 'student-dashboard', roles: ['student'] },
+            { href: '/pages/teacher-dashboard.html', label: 'Teacher Dashboard', page: 'teacher-dashboard', roles: ['teacher', 'admin'] },
+            { href: '/pages/admin-dashboard.html', label: 'Admin Panel', page: 'admin-dashboard', roles: ['admin'] }
+        ];
+
+        const allItems = [...baseItems, ...roleSpecificItems];
+        
+        return allItems.filter(item => 
+            item.roles.includes(userRole) || 
+            (userRole === 'admin' && item.roles.includes('teacher')) // Admins can access teacher features
+        );
+    }
+
+    // Redirect user to appropriate dashboard based on role
+    static redirectToDashboard(user, userRole) {
+        const dashboardUrl = this.DASHBOARD_ROUTES[userRole] || this.DASHBOARD_ROUTES.student;
+        window.location.href = dashboardUrl;
+    }
+
+    // Check if current page is accessible by user role
+    static isPageAccessible(currentPath, userRole) {
+        // Always allow access to these pages
+        const publicPages = ['/', '/index.html', '/pages/login.html', '/pages/profile.html'];
+        
+        if (publicPages.some(page => currentPath.includes(page))) {
+            return true;
+        }
+
+        // Role-specific page access
+        const rolePages = {
+            student: ['/pages/student-dashboard.html'],
+            teacher: ['/pages/student-dashboard.html', '/pages/teacher-dashboard.html'], 
+            admin: ['/pages/student-dashboard.html', '/pages/teacher-dashboard.html', '/pages/admin-dashboard.html']
+        };
+
+        const allowedPages = rolePages[userRole] || rolePages.student;
+        return allowedPages.some(page => currentPath.includes(page));
+    }
+
+    // Enhanced authentication guard for pages
+    static async requireAuth(requiredRole = null) {
+        try {
+            if (!window.authManager) {
+                this.redirectToLogin();
+                return null;
+            }
+
+            await window.authManager.waitForAuthState();
+            
+            if (!window.authManager.isAuthenticated()) {
+                this.redirectToLogin();
+                return null;
+            }
+
+            const user = window.authManager.getCurrentUser();
+            const userRole = await this.getUserRole(user);
+
+            // Check role-based access if required role specified
+            if (requiredRole && !this.hasRoleAccess(userRole, requiredRole)) {
+                this.showToast(`Access denied. ${requiredRole} role required.`, 'error');
+                setTimeout(() => {
+                    this.redirectToDashboard(user, userRole);
+                }, 2000);
+                return null;
+            }
+
+            // Check if current page is accessible
+            const currentPath = window.location.pathname;
+            if (!this.isPageAccessible(currentPath, userRole)) {
+                this.showToast('Access denied for this page.', 'error');
+                setTimeout(() => {
+                    this.redirectToDashboard(user, userRole);
+                }, 2000);
+                return null;
+            }
+
+            return { user, userRole };
+        } catch (error) {
+            console.error('Authentication check failed:', error);
+            this.redirectToLogin();
+            return null;
+        }
+    }
+
+    // Redirect to login page
+    static redirectToLogin() {
+        window.location.href = '/pages/login.html';
+    }
     // Form validation utilities
     static validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -216,3 +216,42 @@
     outline-offset: 2px;
     color: var(--primary-blue-hover);
 }
+
+/* Role selection dropdown styling */
+select.form-input {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px 16px;
+    padding-right: 40px;
+    appearance: none;
+}
+
+select.form-input:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2346a3f7' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Dark theme adjustments for select dropdown */
+[data-theme="dark"] select.form-input {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%9ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+[data-theme="dark"] select.form-input:focus {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2346a3f7' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Role selection styling enhancements */
+#login-role, #signup-role {
+    font-weight: var(--font-medium);
+}
+
+#login-role option, #signup-role option {
+    padding: 8px 12px;
+}
+
+/* Role selection validation styling */
+.form-input.border-error {
+    border-color: var(--accent-error);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Orbit</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../styling/base.css">
+    <link rel="stylesheet" href="../styling/components.css">
+    <link rel="stylesheet" href="../styling/global.css">
+    
+    <!-- Component Loader Script -->
+    <script src="../Scripts/component-loader.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛸%3C/text%3E%3C/svg%3E">
+    
+    <!-- Theme script (inline for performance) -->
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const theme = savedTheme || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <!-- Navigation Component -->
+        <div id="navbar-container" data-component="../components/navbar.html"></div>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <!-- Header Section -->
+                <section class="section-sm">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                            <h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
+                            <p class="text-secondary">System administration and user management</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button class="btn btn-outline" id="export-system-data-btn">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Export Data
+                            </button>
+                            <button class="btn btn-primary" id="add-user-btn">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                </svg>
+                                Add User
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- System Stats -->
+                <section class="section-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Total Users</p>
+                                        <p class="text-2xl font-bold" id="total-users">-</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">👥</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Active Teachers</p>
+                                        <p class="text-2xl font-bold text-blue" id="active-teachers">-</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">👨‍🏫</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">System Health</p>
+                                        <p class="text-2xl font-bold text-success" id="system-health">98%</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">⚡</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-secondary mb-1">Storage Used</p>
+                                        <p class="text-2xl font-bold text-warning" id="storage-used">2.4GB</p>
+                                    </div>
+                                    <div class="text-3xl opacity-60">💾</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Main Admin Content -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Left Column - User Management -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- User Management -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="card-title">User Management</h3>
+                                    <div class="flex gap-2">
+                                        <select id="role-filter" class="form-select" style="width: auto;">
+                                            <option value="all">All Roles</option>
+                                            <option value="student">Students</option>
+                                            <option value="teacher">Teachers</option>
+                                            <option value="admin">Admins</option>
+                                        </select>
+                                        <button class="btn btn-ghost btn-sm" id="refresh-users-btn">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div id="users-list" class="space-y-3">
+                                    <!-- Users will be loaded dynamically -->
+                                    <div class="text-center py-8 text-secondary">
+                                        <div class="text-4xl mb-3">👥</div>
+                                        <p>Loading users...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Activity Log -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">System Activity Log</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="activity-log" class="space-y-3">
+                                    <!-- Activity items will be loaded dynamically -->
+                                    <div class="text-center py-8 text-secondary">
+                                        <div class="text-4xl mb-3">📊</div>
+                                        <p>Loading activity log...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Quick Actions & System Info -->
+                    <div class="space-y-6">
+                        <!-- Quick Admin Actions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Admin Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="space-y-3">
+                                    <button class="btn btn-outline w-full text-left" id="manage-roles-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                        </svg>
+                                        Manage User Roles
+                                    </button>
+                                    <button class="btn btn-outline w-full text-left" id="system-settings-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        System Settings
+                                    </button>
+                                    <button class="btn btn-outline w-full text-left" id="backup-data-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h6l2 2h6a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-10 4l-3 3m0 0l3 3m-3-3h6"/>
+                                        </svg>
+                                        Backup Data
+                                    </button>
+                                    <button class="btn btn-outline w-full text-left" id="view-analytics-btn">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                        </svg>
+                                        View Analytics
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Information -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">System Information</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Server Status</span>
+                                        <span class="badge badge-success">Online</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Database</span>
+                                        <span class="badge badge-success">Connected</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Last Backup</span>
+                                        <span class="text-sm">2 hours ago</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-secondary">Version</span>
+                                        <span class="text-sm">v1.0.0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Alerts -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">System Alerts</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="system-alerts" class="space-y-3">
+                                    <!-- System alerts will be loaded dynamically -->
+                                    <div class="text-center py-4 text-secondary">
+                                        <div class="text-3xl mb-2">🛡️</div>
+                                        <p class="text-sm">All systems operational</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer Component -->
+        <div id="footer-container" data-component="../components/footer.html"></div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="../firebase/app.js"></script>
+    <script src="../firebase/auth.js"></script>
+    
+    <!-- Component Scripts -->
+    <script src="../components/navbar.js"></script>
+    <script src="../components/footer.js"></script>
+    
+    <!-- Admin Dashboard Script -->
+    <script type="module" src="../Scripts/admin-dashboard.js"></script>
+</body>
+</html>

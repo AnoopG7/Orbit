@@ -21,31 +21,40 @@
         return true;
     }
 
-    // Initialize dashboard when DOM is loaded
-    document.addEventListener('DOMContentLoaded', () => {
+    // Initialize dashboard when DOM is loaded with role-based auth
+    document.addEventListener('DOMContentLoaded', async () => {
         if (!isInitialized) {
-            initializeStudentDashboard();
+            await initializeStudentDashboard();
         }
     });
 
-    function initializeStudentDashboard() {
+    async function initializeStudentDashboard() {
         if (isInitialized) {
             console.log('Dashboard already initialized, skipping...');
             return;
         }
 
-        console.log('Initializing Student Dashboard...');
+        // Use new role-based authentication - student role required
+        const authResult = await AuthUtils.requireAuth('student');
+        
+        if (!authResult) {
+            // Auth failed, user will be redirected by requireAuth
+            return;
+        }
+
+        const { user, userRole } = authResult;
+        console.log('Initializing Student Dashboard for user:', user.email, 'Role:', userRole);
         isInitialized = true;
         
-        // Initialize dashboard components without auth check first
+        // Initialize dashboard components
         animateProgressBars();
         animateStatCards();
         initializeInteractiveElements();
         setupRealTimeUpdates();
         initializeQuickActions();
         
-        // Load user data with auth check (but don't redirect immediately)
-        loadStudentData();
+        // Load user data with role info
+        loadStudentData(user, userRole);
         
         // Listen for auth state changes to handle logout
         setupAuthStateListener();
