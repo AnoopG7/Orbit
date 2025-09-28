@@ -1,11 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbit</title>
+    <title>Orbit - Student Engagement Platform</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="./styling/base.css">
+    <link rel="stylesheet" href="./styling/components.css">
+    <link rel="stylesheet" href="./styling/global.css">
+    
+    <!-- Component Loader Script -->
+    <script src="./Scripts/component-loader.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛸%3C/text%3E%3C/svg%3E">
+    
+    <!-- Theme script (inline for performance) -->
+    <script>
+        // Check for saved theme preference or default to dark mode
+        const savedTheme = localStorage.getItem('theme');
+        const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const theme = savedTheme || 'dark'; // Default to dark mode
+        
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+        });
+    </script>
 </head>
 <body>
-    
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <!-- Navigation Component -->
+        <div id="navbar-container" data-component="./components/navbar.html" data-show-loading></div>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <!-- Hero Section -->
+                <section class="section-lg text-center">
+                    <div class="max-w-4xl mx-auto">
+                        <h1 class="text-5xl font-extrabold mb-6">
+                            Welcome to 
+                            <span class="text-blue">Orbit</span>
+                        </h1>
+                        <p class="text-xl text-secondary mb-8 max-w-2xl mx-auto">
+                            A comprehensive student engagement analyzer that tracks, analyzes, and provides insights into learning patterns and academic performance.
+                        </p>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <a href="#" class="btn btn-primary btn-lg">Get Started</a>
+                            <a href="#" class="btn btn-secondary btn-lg">Learn More</a>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Features Grid -->
+                <section class="section">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold mb-4">Key Features</h2>
+                        <p class="text-lg text-secondary max-w-2xl mx-auto">
+                            Discover how Orbit transforms student engagement data into actionable insights
+                        </p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-4xl mb-4">📊</div>
+                                <h3 class="card-title text-xl mb-3">Real-time Analytics</h3>
+                                <p class="text-secondary">
+                                    Monitor student engagement patterns in real-time with comprehensive dashboards and interactive charts.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-4xl mb-4">🎯</div>
+                                <h3 class="card-title text-xl mb-3">Personalized Insights</h3>
+                                <p class="text-secondary">
+                                    Get tailored recommendations and insights based on individual learning patterns and behaviors.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-4xl mb-4">🤝</div>
+                                <h3 class="card-title text-xl mb-3">Collaborative Tools</h3>
+                                <p class="text-secondary">
+                                    Foster collaboration with integrated discussion forums, peer interactions, and group activities.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-4xl mb-4">⚡</div>
+                                <h3 class="card-title text-xl mb-3">Performance Tracking</h3>
+                                <p class="text-secondary">
+                                    Track assignment completion, quiz performance, and overall academic progress seamlessly.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-4xl mb-4">🔍</div>
+                                <h3 class="card-title text-xl mb-3">Advanced Algorithms</h3>
+                                <p class="text-secondary">
+                                    Leverage sophisticated data structures and algorithms for pattern recognition and predictive analytics.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-4xl mb-4">☁️</div>
+                                <h3 class="card-title text-xl mb-3">Cloud Integration</h3>
+                                <p class="text-secondary">
+                                    Seamless integration with Firebase for real-time data synchronization and secure authentication.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- CTA Section -->
+                <section class="section bg-tertiary rounded-2xl">
+                    <div class="text-center py-12 px-6">
+                        <h2 class="text-3xl font-bold mb-4">Ready to Transform Education?</h2>
+                        <p class="text-lg text-secondary mb-8 max-w-xl mx-auto">
+                            Join thousands of educators already using Orbit to enhance student engagement and improve learning outcomes.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <a href="#" class="btn btn-primary btn-lg">Start Free Trial</a>
+                            <a href="#" class="btn btn-outline btn-lg">Contact Sales</a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
+        <!-- Footer Component -->
+        <div id="footer-container" data-component="./components/footer.html" data-show-loading></div>
+    </div>
+
+    <!-- Component Scripts -->
+    <script src="./components/navbar.js"></script>
+    <script src="./components/footer.js"></script>
 </body>
 </html>
