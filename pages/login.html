@@ -91,7 +91,7 @@
                             <button 
                                 type="button" 
                                 id="toggle-login-password"
-                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                                class="password-toggle-btn"
                                 aria-label="Toggle password visibility"
                             >
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +109,7 @@
                             <input type="checkbox" id="remember-me" class="rounded border-primary">
                             <span class="text-secondary">Remember me</span>
                         </label>
-                        <button type="button" id="forgot-password-link" class="text-primary-blue hover:text-primary-blue-hover transition-colors">
+                        <button type="button" id="forgot-password-link" class="forgot-password-link">
                             Forgot password?
                         </button>
                     </div>
@@ -191,7 +191,7 @@
                             <button 
                                 type="button" 
                                 id="toggle-signup-password"
-                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted hover:text-primary transition-colors"
+                                class="password-toggle-btn"
                                 aria-label="Toggle password visibility"
                             >
                                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -294,13 +294,13 @@
                 <div class="form-toggle">
                     <p id="login-toggle" class="text-secondary text-sm">
                         Don't have an account? 
-                        <button type="button" id="show-signup" class="text-primary-blue hover:text-primary-blue-hover font-medium transition-colors">
+                        <button type="button" id="show-signup" class="form-toggle-link">
                             Sign up here
                         </button>
                     </p>
                     <p id="signup-toggle" class="text-secondary text-sm hidden">
                         Already have an account? 
-                        <button type="button" id="show-login" class="text-primary-blue hover:text-primary-blue-hover font-medium transition-colors">
+                        <button type="button" id="show-login" class="form-toggle-link">
                             Sign in here
                         </button>
                     </p>
