@@ -2,21 +2,53 @@
 (function() {
     'use strict';
 
+    let isInitialized = false;
+    let authChecked = false;
+
+    // Proper auth check without loops
+    function immediateAuthCheck() {
+        // If no auth manager is available, block access immediately
+        if (!window.authManager) {
+            return false;
+        }
+        
+        // If auth manager exists but no current user, block access
+        const currentUser = window.authManager.getCurrentUser();
+        if (!currentUser) {
+            return false;
+        }
+        
+        return true;
+    }
+
     // Initialize dashboard when DOM is loaded
     document.addEventListener('DOMContentLoaded', () => {
-        initializeStudentDashboard();
+        if (!isInitialized) {
+            initializeStudentDashboard();
+        }
     });
 
     function initializeStudentDashboard() {
+        if (isInitialized) {
+            console.log('Dashboard already initialized, skipping...');
+            return;
+        }
+
         console.log('Initializing Student Dashboard...');
+        isInitialized = true;
         
-        // Initialize various dashboard components
+        // Initialize dashboard components without auth check first
         animateProgressBars();
         animateStatCards();
         initializeInteractiveElements();
-        loadStudentData();
         setupRealTimeUpdates();
         initializeQuickActions();
+        
+        // Load user data with auth check (but don't redirect immediately)
+        loadStudentData();
+        
+        // Listen for auth state changes to handle logout
+        setupAuthStateListener();
         
         console.log('Student Dashboard initialized successfully');
     }
@@ -124,45 +156,106 @@
     }
 
     function loadStudentData() {
-        // In a real application, this would fetch data from an API
-        const mockStudentData = {
-            name: 'Alex Johnson',
-            studentId: 'ST2024001',
-            email: 'alex.johnson@university.edu',
-            semester: 'Fall 2024',
-            year: 'Junior',
-            major: 'Computer Science',
-            gpa: 3.7,
-            courses: [
-                {
-                    name: 'Advanced Mathematics',
-                    professor: 'Prof. Sarah Wilson',
-                    progress: 87,
-                    grade: 'A-'
-                },
-                {
-                    name: 'Quantum Physics',
-                    professor: 'Prof. Michael Chen', 
-                    progress: 92,
-                    grade: 'A'
-                },
-                {
-                    name: 'Data Structures & Algorithms',
-                    professor: 'Prof. Emma Rodriguez',
-                    progress: 95,
-                    grade: 'A+'
-                }
-            ]
-        };
-
-        // Update student name if element exists
-        const studentNameElement = document.getElementById('student-name');
-        if (studentNameElement) {
-            studentNameElement.textContent = mockStudentData.name;
+        if (authChecked) {
+            console.log('Auth already checked, skipping...');
+            return;
         }
 
-        // You can extend this to populate other dashboard elements
-        console.log('Student data loaded:', mockStudentData);
+        // Wait for Firebase to be ready, then check auth
+        function checkAuth() {
+            if (window.authManager) {
+                window.authManager.waitForAuthState().then(user => {
+                    authChecked = true;
+                    if (user) {
+                        console.log('Authenticated user found:', user.email);
+                        updateUserInfo(user);
+                    } else {
+                        // No user - redirect to login
+                        console.warn('No authenticated user, redirecting');
+                        window.location.href = '/pages/login.html';
+                    }
+                }).catch(error => {
+                    console.error('Auth check failed:', error);
+                    window.location.href = '/pages/login.html';
+                });
+            } else {
+                // Check again in a moment if auth manager isn't ready
+                setTimeout(checkAuth, 200);
+            }
+        }
+        
+        checkAuth();
+    }
+
+    function updateUserInfo(user) {
+        // Update student name from Firebase Auth
+        const studentNameElement = document.getElementById('student-name');
+        if (studentNameElement && user.displayName) {
+            studentNameElement.textContent = user.displayName;
+        }
+
+        // Update avatar with user initials
+        const avatarElement = document.querySelector('.w-12.h-12.rounded-full');
+        if (avatarElement && user.displayName) {
+            const initials = getInitials(user.displayName);
+            avatarElement.textContent = initials;
+        }
+
+        // Generate student ID based on user info (could be stored in Firestore)
+        const studentIdElement = document.querySelector('p.text-xs.text-muted');
+        if (studentIdElement && user.uid) {
+            // Generate a formatted student ID from user UID
+            const studentId = `ST${user.uid.substring(0, 7).toUpperCase()}`;
+            studentIdElement.textContent = `Student ID: ${studentId}`;
+        }
+
+        // Get additional user data from Firestore if available
+        if (window.authManager.getUserProfile) {
+            window.authManager.getUserProfile(user.uid).then(profile => {
+                if (profile) {
+                    console.log('User profile loaded:', profile);
+                    // You can update additional fields here based on Firestore data
+                }
+            });
+        }
+
+        console.log('User data loaded from Firebase:', {
+            uid: user.uid,
+            name: user.displayName,
+            email: user.email,
+            emailVerified: user.emailVerified
+        });
+    }
+
+    function updateUserInfoFallback() {
+        // Temporary fallback while Firebase loads
+        const studentNameElement = document.getElementById('student-name');
+        if (studentNameElement) {
+            studentNameElement.textContent = 'Loading...';
+        }
+        console.log('Using temporary fallback while auth loads');
+    }
+
+    function getInitials(name) {
+        if (!name) return 'U';
+        return name.split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
+    }
+
+    function setupAuthStateListener() {
+        if (window.authManager) {
+            // Listen for auth state changes
+            window.authManager.onAuthStateChange(user => {
+                if (!user && authChecked) {
+                    // User logged out - immediate redirect
+                    console.log('User logged out, redirecting...');
+                    window.location.href = '/pages/login.html';
+                }
+            });
+        }
     }
 
     function setupRealTimeUpdates() {

@@ -51,7 +51,6 @@ class AuthManager {
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
             this.notifyAuthStateChange(user);
-            this.updateUIForAuthState(user);
         });
     }
 
@@ -63,27 +62,6 @@ class AuthManager {
     // Notify all listeners of auth state change
     notifyAuthStateChange(user) {
         this.authStateListeners.forEach(callback => callback(user));
-    }
-
-    // Update UI based on authentication state
-    updateUIForAuthState(user) {
-        const authButtons = document.querySelectorAll('#auth-button, #auth-button-mobile');
-        const userMenus = document.querySelectorAll('.user-menu');
-        
-        authButtons.forEach(button => {
-            if (user) {
-                button.textContent = 'Dashboard';
-                button.href = this.getDashboardUrl(user);
-            } else {
-                button.textContent = 'Login';
-                button.href = '/pages/login.html';
-            }
-        });
-
-        // Show/hide user menus
-        userMenus.forEach(menu => {
-            menu.style.display = user ? 'block' : 'none';
-        });
     }
 
     // Get appropriate dashboard URL based on user role

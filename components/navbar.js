@@ -143,6 +143,79 @@
         }
     }
 
+    // Auth button functionality
+    function initAuthButtons() {
+        const authButton = document.getElementById('auth-button');
+        const authButtonMobile = document.getElementById('auth-button-mobile');
+        
+        function updateAuthButtons(user) {
+            const buttons = [authButton, authButtonMobile].filter(Boolean);
+            
+            buttons.forEach(button => {
+                if (user) {
+                    // User is authenticated - show logout
+                    button.textContent = 'Logout';
+                    button.href = '#';
+                    button.onclick = (e) => {
+                        e.preventDefault();
+                        handleLogout();
+                    };
+                } else {
+                    // User is not authenticated - show login
+                    button.textContent = 'Login';
+                    button.href = '/pages/login.html';
+                    button.onclick = null;
+                }
+            });
+        }
+
+        async function handleLogout() {
+            if (window.authManager) {
+                try {
+                    // Clear any local storage auth data
+                    localStorage.removeItem('firebase:authUser');
+                    localStorage.removeItem('firebase:host');
+                    
+                    const result = await window.authManager.signOut();
+                    console.log('Logout result:', result);
+                    
+                    // Force clear the auth state
+                    window.authManager.currentUser = null;
+                    
+                    // Clear session storage as well
+                    sessionStorage.clear();
+                    
+                    // Redirect to home page after successful logout
+                    window.location.href = '/';
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                    // Force redirect even on error
+                    window.location.href = '/';
+                }
+            } else {
+                // Fallback if authManager not available
+                window.location.href = '/';
+            }
+        }
+
+        // Check auth state and update buttons
+        if (window.authManager) {
+            // Listen for auth state changes
+            window.authManager.onAuthStateChange(updateAuthButtons);
+            
+            // Check current auth state
+            const currentUser = window.authManager.getCurrentUser();
+            updateAuthButtons(currentUser);
+        } else {
+            // Wait for authManager to be available
+            setTimeout(() => {
+                if (window.authManager) {
+                    initAuthButtons();
+                }
+            }, 500);
+        }
+    }
+
     // Main initialization function
     function initializeNavbar() {
         try {
@@ -159,6 +232,7 @@
             setActiveNavLink();
             initThemeToggle();
             initMobileMenu();
+            initAuthButtons();
             console.log('Navbar initialized successfully');
         } catch (error) {
             console.error('Error initializing navbar:', error);

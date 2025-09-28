@@ -366,6 +366,10 @@
         <div id="footer-container" data-component="../components/footer.html" data-show-loading></div>
     </div>
 
+    <!-- Firebase Scripts (Load first) -->
+    <script type="module" src="../firebase/app.js"></script>
+    <script src="../firebase/auth.js"></script>
+    
     <!-- Component Scripts -->
     <script src="../components/navbar.js"></script>
     <script src="../components/footer.js"></script>
