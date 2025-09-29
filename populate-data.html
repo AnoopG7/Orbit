@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Data Population - Orbit</title>
+    <link rel="stylesheet" href="../styling/base.css">
+    <link rel="stylesheet" href="../styling/components.css">
+</head>
+<body class="bg-secondary">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-primary mb-4">🚀 Firebase Data Population</h1>
+                <p class="text-muted">Generate and insert realistic student engagement data into Firebase</p>
+            </div>
+
+            <!-- Status Card -->
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h2 class="card-title">📊 Population Status</h2>
+                </div>
+                <div class="card-body">
+                    <div id="status-container">
+                        <div class="text-center py-8">
+                            <div class="text-4xl mb-4">📦</div>
+                            <h3 class="text-lg font-bold mb-2">Ready to Populate Firebase</h3>
+                            <p class="text-muted mb-6">Click the button below to generate and insert sample data</p>
+                            <button id="populate-btn" class="btn bg-primary text-white px-8 py-3 text-lg">
+                                🚀 Start Data Population
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Preview -->
+            <div class="card mb-6">
+                <div class="card-header">
+                    <h2 class="card-title">📋 What Will Be Generated</h2>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="text-center p-4 bg-blue-50 rounded-lg">
+                            <div class="text-2xl mb-2">👥</div>
+                            <div class="text-xl font-bold text-blue-600">20</div>
+                            <div class="text-sm text-blue-800">Students</div>
+                            <div class="text-xs text-muted mt-1">With profiles & preferences</div>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 rounded-lg">
+                            <div class="text-2xl mb-2">👨‍🏫</div>
+                            <div class="text-xl font-bold text-green-600">5</div>
+                            <div class="text-sm text-green-800">Teachers</div>
+                            <div class="text-xs text-muted mt-1">With specializations</div>
+                        </div>
+                        <div class="text-center p-4 bg-purple-50 rounded-lg">
+                            <div class="text-2xl mb-2">📚</div>
+                            <div class="text-xl font-bold text-purple-600">8</div>
+                            <div class="text-sm text-purple-800">Courses</div>
+                            <div class="text-xs text-muted mt-1">Across departments</div>
+                        </div>
+                        <div class="text-center p-4 bg-orange-50 rounded-lg">
+                            <div class="text-2xl mb-2">📊</div>
+                            <div class="text-xl font-bold text-orange-600">350+</div>
+                            <div class="text-sm text-orange-800">Activities</div>
+                            <div class="text-xs text-muted mt-1">Engagement data</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Logs -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Population Logs</h2>
+                </div>
+                <div class="card-body">
+                    <div id="logs-container" class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-64 overflow-y-auto">
+                        <div class="text-gray-500">Waiting for population to start...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="text-center mt-8">
+                <a href="../index.html" class="btn bg-gray-200 text-gray-700 mr-4">🏠 Back to Home</a>
+                <a href="../pages/admin-dashboard.html" class="btn bg-secondary text-white">👨‍💼 Admin Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../firebase/firebase-config.js"></script>
+    <script type="module" src="../Scripts/populate-firebase-data.js"></script>
+    <script type="module">
+        // Import Firebase functions
+        import { db } from '../firebase/firebase-config.js';
+        
+        let isPopulating = false;
+        
+        // Override console.log to show in our logs container
+        const originalLog = console.log;
+        const logsContainer = document.getElementById('logs-container');
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            
+            const message = args.join(' ');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'mb-1';
+            logEntry.innerHTML = `<span class="text-gray-500">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        };
+        
+        // Handle populate button click
+        document.getElementById('populate-btn').addEventListener('click', async () => {
+            if (isPopulating) return;
+            
+            isPopulating = true;
+            const statusContainer = document.getElementById('status-container');
+            const populateBtn = document.getElementById('populate-btn');
+            
+            // Update UI to show loading state
+            populateBtn.disabled = true;
+            populateBtn.innerHTML = '🔄 Populating...';
+            populateBtn.className = 'btn bg-gray-400 text-white px-8 py-3 text-lg cursor-not-allowed';
+            
+            // Clear logs
+            logsContainer.innerHTML = '';
+            
+            try {
+                console.log('🚀 Starting Firebase data population process...');
+                
+                // Run the population
+                const result = await window.populateFirebaseData();
+                
+                if (result.success) {
+                    // Show success state
+                    statusContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="text-6xl mb-4">✅</div>
+                            <h3 class="text-xl font-bold text-green-600 mb-4">Population Completed Successfully!</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-md mx-auto mb-6">
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-blue-600">${result.data.students}</div>
+                                    <div class="text-xs text-muted">Students</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-green-600">${result.data.teachers}</div>
+                                    <div class="text-xs text-muted">Teachers</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-purple-600">${result.data.courses}</div>
+                                    <div class="text-xs text-muted">Courses</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-lg font-bold text-orange-600">${result.data.activities}</div>
+                                    <div class="text-xs text-muted">Activities</div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <button onclick="location.reload()" class="btn bg-primary text-white px-6 py-2">
+                                    🔄 Populate Again
+                                </button>
+                                <br>
+                                <a href="../pages/student-dashboard.html" class="btn bg-blue-500 text-white px-6 py-2 mr-2">
+                                    👨‍🎓 Student Dashboard
+                                </a>
+                                <a href="../pages/admin-dashboard.html" class="btn bg-green-500 text-white px-6 py-2">
+                                    👨‍💼 Admin Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    
+                    console.log('✅ All data has been successfully inserted into Firebase!');
+                    console.log('🎯 You can now view the dashboards to see real data instead of mock data.');
+                    
+                } else {
+                    throw new Error(result.error);
+                }
+                
+            } catch (error) {
+                console.error('❌ Population failed:', error);
+                
+                // Show error state
+                statusContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-6xl mb-4">❌</div>
+                        <h3 class="text-xl font-bold text-red-600 mb-4">Population Failed</h3>
+                        <p class="text-muted mb-6">${error.message}</p>
+                        <button onclick="location.reload()" class="btn bg-red-500 text-white px-6 py-2">
+                            🔄 Try Again
+                        </button>
+                    </div>
+                `;
+            }
+            
+            isPopulating = false;
+        });
+        
+        // Initial log
+        console.log('🎯 Firebase Data Population Tool loaded and ready!');
+        console.log('📦 Click the button above to generate and insert sample data.');
+    </script>
+</body>
+</html>

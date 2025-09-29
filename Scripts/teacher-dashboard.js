@@ -1,33 +1,120 @@
-// Teacher Dashboard JavaScript functionality
+// Enhanced Teacher Dashboard with Advanced Analytics and DSA Integration
+// Import DSA algorithms
+let engagementAnalyzer, predictiveAnalyzer, recommendationEngine;
+let currentUser = null;
+let teacherData = null;
+
+// Load DSA modules
 document.addEventListener('DOMContentLoaded', async () => {
+    // Load DSA algorithms
+    await loadDSAModules();
+    
     // Simple authentication check - no role requirements
     const authResult = await AuthUtils.requireAuth();
     
     if (authResult) {
         const { user } = authResult;
-        console.log('Initializing Teacher Dashboard for user:', user.email);
+        currentUser = user;
+        console.log('Initializing Enhanced Teacher Dashboard for user:', user.email);
         
         // Get full user profile for additional data
         const userProfile = await window.authManager.getUserProfile(user.uid);
-        initializeTeacherDashboard(user, userProfile);
+        await initializeTeacherDashboard(user, userProfile);
     }
 });
+
+async function loadDSAModules() {
+    try {
+        // Load all DSA algorithms
+        if (typeof EngagementAnalyzer !== 'undefined') {
+            engagementAnalyzer = new EngagementAnalyzer();
+            console.log('Engagement Analyzer loaded');
+        }
+        
+        if (typeof PredictiveEngagementAnalyzer !== 'undefined') {
+            predictiveAnalyzer = new PredictiveEngagementAnalyzer();
+            console.log('Predictive Analyzer loaded');
+        }
+        
+        if (typeof RecommendationEngine !== 'undefined') {
+            recommendationEngine = new RecommendationEngine();
+            console.log('Recommendation Engine loaded');
+        }
+        
+        // Initialize with sample data for demonstration
+        await initializeSampleTeacherData();
+        
+    } catch (error) {
+        console.error('Error loading DSA modules:', error);
+        // Continue without DSA features
+    }
+}
+
+async function initializeSampleTeacherData() {
+    if (!engagementAnalyzer) return;
+    
+    // Generate comprehensive sample data for teacher's classes
+    const students = [
+        'alice_johnson', 'bob_smith', 'carol_davis', 'david_wilson', 'emma_brown',
+        'frank_miller', 'grace_lee', 'henry_garcia', 'iris_chen', 'jack_taylor',
+        'kate_anderson', 'liam_thomas', 'maya_rodriguez', 'noah_white', 'olivia_martin'
+    ];
+    
+    const activityTypes = ['assignment_submission', 'quiz_completion', 'discussion_participation', 
+                          'lecture_attendance', 'peer_collaboration', 'resource_access', 'question_asking'];
+    
+    // Generate activities for each student over the last 30 days
+    students.forEach(studentId => {
+        const numActivities = Math.floor(Math.random() * 25) + 15; // 15-40 activities per student
+        
+        for (let i = 0; i < numActivities; i++) {
+            const activity = {
+                studentId: studentId,
+                type: activityTypes[Math.floor(Math.random() * activityTypes.length)],
+                timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Last 30 days
+                quality: Math.floor(Math.random() * 40) + 60, // 60-100 quality score
+                score: Math.floor(Math.random() * 7) + 3, // 3-10 score
+                duration: Math.floor(Math.random() * 120) + 10 // 10-130 minutes
+            };
+            
+            engagementAnalyzer.addStudentActivity(studentId, activity);
+        }
+        
+        // Add to other analyzers
+        if (predictiveAnalyzer) {
+            predictiveAnalyzer.analyzeStudentPatterns(studentId);
+        }
+        if (recommendationEngine) {
+            recommendationEngine.addStudentInteraction(studentId, 'course_material', 0.8);
+        }
+    });
+    
+    console.log('Sample teacher data initialized for', students.length, 'students');
+}
 
 async function initializeTeacherDashboard(user, userProfile) {
     // Set teacher name
     document.getElementById('teacher-name').textContent = userProfile.displayName || user.displayName || 'Teacher';
     
-    // Initialize dashboard components
+    // Initialize enhanced dashboard components with analytics
     await Promise.all([
-        loadDashboardStats(),
-        loadStudentActivity(),
-        loadClassList(),
-        loadAlerts(),
-        initializeEngagementChart()
+        loadEnhancedDashboardStats(),
+        loadAdvancedStudentActivity(),
+        loadAnalyticsClassList(),
+        loadIntelligentAlerts(),
+        initializeAdvancedEngagementChart(),
+        loadClassroomAnalytics(),
+        loadStudentPerformanceMetrics(),
+        loadEngagementPredictions()
     ]);
     
-    // Setup event listeners
-    setupEventListeners();
+    // Setup enhanced event listeners
+    setupAdvancedEventListeners();
+    
+    // Initialize real-time updates
+    initializeRealTimeTeacherUpdates();
+    
+    console.log('Enhanced Teacher Dashboard fully initialized');
 }
 
 async function loadDashboardStats() {

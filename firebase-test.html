@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Test - Orbit</title>
+    <link rel="stylesheet" href="../styling/base.css">
+    <link rel="stylesheet" href="../styling/components.css">
+</head>
+<body class="bg-secondary">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-primary mb-4">🔥 Firebase Connection Test</h1>
+                <p class="text-muted">Testing Firebase authentication and data access</p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔐 Authentication Test</h2>
+                </div>
+                <div class="card-body">
+                    <div id="auth-status" class="mb-4">
+                        <p class="text-muted">Testing authentication...</p>
+                    </div>
+                    <button id="test-auth-btn" class="btn bg-primary text-white">
+                        🚀 Test Anonymous Sign-in
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mt-6">
+                <div class="card-header">
+                    <h2 class="card-title">📊 Data Access Test</h2>
+                </div>
+                <div class="card-body">
+                    <div id="data-status" class="mb-4">
+                        <p class="text-muted">Click button above to authenticate first</p>
+                    </div>
+                    <button id="test-data-btn" class="btn bg-secondary text-white" disabled>
+                        📦 Test Data Access
+                    </button>
+                </div>
+            </div>
+
+            <div class="text-center mt-8">
+                <a href="../populate-data.html" class="btn bg-green-500 text-white mr-4">🚀 Go to Population Tool</a>
+                <a href="../index.html" class="btn bg-gray-200 text-gray-700">🏠 Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { auth, db } from '../firebase/firebase-config.js';
+        import { signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { collection, getDocs, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+        let currentUser = null;
+
+        // Auth status display
+        const authStatus = document.getElementById('auth-status');
+        const dataStatus = document.getElementById('data-status');
+        const testAuthBtn = document.getElementById('test-auth-btn');
+        const testDataBtn = document.getElementById('test-data-btn');
+
+        // Monitor auth state
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                authStatus.innerHTML = `
+                    <div class="text-green-600">
+                        ✅ <strong>Authenticated!</strong><br>
+                        <small>User ID: ${user.uid}</small><br>
+                        <small>Type: ${user.isAnonymous ? 'Anonymous' : 'Regular'}</small>
+                    </div>
+                `;
+                testDataBtn.disabled = false;
+                testDataBtn.className = 'btn bg-secondary text-white';
+                dataStatus.innerHTML = '<p class="text-blue-600">✅ Ready to test data access</p>';
+            } else {
+                currentUser = null;
+                authStatus.innerHTML = '<p class="text-red-600">❌ Not authenticated</p>';
+                testDataBtn.disabled = true;
+                testDataBtn.className = 'btn bg-gray-400 text-white cursor-not-allowed';
+                dataStatus.innerHTML = '<p class="text-muted">Authentication required first</p>';
+            }
+        });
+
+        // Test authentication
+        testAuthBtn.addEventListener('click', async () => {
+            try {
+                authStatus.innerHTML = '<p class="text-blue-600">🔄 Signing in anonymously...</p>';
+                
+                const userCredential = await signInAnonymously(auth);
+                console.log('✅ Anonymous sign-in successful:', userCredential.user.uid);
+                
+            } catch (error) {
+                console.error('❌ Authentication failed:', error);
+                authStatus.innerHTML = `
+                    <div class="text-red-600">
+                        ❌ <strong>Authentication Failed</strong><br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            }
+        });
+
+        // Test data access
+        testDataBtn.addEventListener('click', async () => {
+            try {
+                dataStatus.innerHTML = '<p class="text-blue-600">🔄 Testing Firestore access...</p>';
+                
+                // Try to read from students collection
+                const studentsRef = collection(db, 'students');
+                const studentsSnapshot = await getDocs(studentsRef);
+                const studentsCount = studentsSnapshot.size;
+
+                // Try to read from activities collection
+                const activitiesRef = collection(db, 'activities');
+                const activitiesSnapshot = await getDocs(activitiesRef);
+                const activitiesCount = activitiesSnapshot.size;
+
+                dataStatus.innerHTML = `
+                    <div class="text-green-600">
+                        ✅ <strong>Data Access Successful!</strong><br>
+                        <small>Students: ${studentsCount} documents</small><br>
+                        <small>Activities: ${activitiesCount} documents</small><br>
+                        <small class="text-blue-600 mt-2 block">
+                            ${studentsCount > 0 ? '🎉 Firebase has data!' : '📝 Firebase is empty - populate it first'}
+                        </small>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Data access failed:', error);
+                dataStatus.innerHTML = `
+                    <div class="text-red-600">
+                        ❌ <strong>Data Access Failed</strong><br>
+                        <small>${error.code}: ${error.message}</small><br>
+                        <small class="text-blue-600 mt-2 block">
+                            💡 Check Firebase security rules
+                        </small>
+                    </div>
+                `;
+            }
+        });
+
+    </script>
+</body>
+</html>

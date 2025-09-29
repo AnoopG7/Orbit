@@ -1,7 +1,6 @@
 // Firebase App Initialization and Core Functions
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+import { app, auth, db } from '/firebase/firebase-config.js';
 import { 
-    getAuth, 
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
@@ -14,7 +13,6 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 
 import { 
-    getFirestore,
     doc,
     setDoc,
     getDoc,
@@ -22,20 +20,7 @@ import {
     serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
-// Import Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyB-iT2ti3hk9sHAjdF19DkYFvHiLEnBNcw",
-    authDomain: "orbit-65e7a.firebaseapp.com",
-    projectId: "orbit-65e7a",
-    storageBucket: "orbit-65e7a.firebasestorage.app",
-    messagingSenderId: "669266611289",
-    appId: "1:669266611289:web:6766e429d4013afb70b548",
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize providers using imported app/auth/db
 const googleProvider = new GoogleAuthProvider();
 
 // Auth State Management
@@ -238,7 +223,6 @@ window.authManager = new AuthManager();
 // Make other Firebase objects globally available
 window.auth = auth;
 window.db = db;
-window.firebaseConfig = firebaseConfig;
 window.updateDoc = updateDoc;
 window.getDoc = getDoc;
 window.doc = doc;
@@ -253,4 +237,4 @@ window.dispatchEvent(new CustomEvent('firebaseReady', {
 console.log('Firebase initialized and authManager created:', window.authManager);
 
 // Export for module usage
-export { AuthManager, auth, db };
+export { AuthManager, app, auth, db };

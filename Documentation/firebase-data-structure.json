@@ -1,0 +1,302 @@
+{
+  "collections": {
+    "students": [
+      {
+        "id": "student_001",
+        "firstName": "Alice",
+        "lastName": "Johnson",
+        "fullName": "Alice Johnson",
+        "email": "alice.johnson1@university.edu",
+        "studentId": "STU20240001",
+        "major": "Computer Science",
+        "year": 3,
+        "gpa": "3.75",
+        "enrollmentDate": "2024-09-15T00:00:00.000Z",
+        "status": "active",
+        "profilePicture": "https://ui-avatars.com/api/?name=Alice+Johnson&background=random&size=150",
+        "preferences": {
+          "notifications": true,
+          "emailUpdates": true,
+          "darkMode": false
+        },
+        "createdAt": "2024-09-29T10:30:00.000Z",
+        "lastLoginAt": "2024-09-28T14:22:00.000Z"
+      },
+      {
+        "id": "student_002",
+        "firstName": "Bob",
+        "lastName": "Smith",
+        "fullName": "Bob Smith",
+        "email": "bob.smith2@university.edu",
+        "studentId": "STU20240002",
+        "major": "Data Science",
+        "year": 2,
+        "gpa": "3.42",
+        "enrollmentDate": "2024-09-08T00:00:00.000Z",
+        "status": "active",
+        "profilePicture": "https://ui-avatars.com/api/?name=Bob+Smith&background=random&size=150",
+        "preferences": {
+          "notifications": true,
+          "emailUpdates": false,
+          "darkMode": true
+        },
+        "createdAt": "2024-09-29T10:30:00.000Z",
+        "lastLoginAt": "2024-09-27T09:15:00.000Z"
+      }
+    ],
+
+    "teachers": [
+      {
+        "id": "teacher_01",
+        "firstName": "Sarah",
+        "lastName": "Johnson",
+        "fullName": "Dr. Sarah Johnson",
+        "title": "Dr.",
+        "email": "sarah.johnson@university.edu",
+        "employeeId": "EMP10001",
+        "department": "Computer Science",
+        "specialization": "Algorithms",
+        "officeHours": "MW 2:00-4:00 PM",
+        "yearsExperience": 12,
+        "rating": "4.7",
+        "coursesTeaching": 3,
+        "status": "active",
+        "profilePicture": "https://ui-avatars.com/api/?name=Sarah+Johnson&background=random&size=150",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      },
+      {
+        "id": "teacher_02",
+        "firstName": "Michael",
+        "lastName": "Chen",
+        "fullName": "Prof. Michael Chen",
+        "title": "Prof.",
+        "email": "michael.chen@university.edu",
+        "employeeId": "EMP10002",
+        "department": "Data Science",
+        "specialization": "Machine Learning",
+        "officeHours": "MW 2:00-4:00 PM",
+        "yearsExperience": 8,
+        "rating": "4.2",
+        "coursesTeaching": 2,
+        "status": "active",
+        "profilePicture": "https://ui-avatars.com/api/?name=Michael+Chen&background=random&size=150",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      }
+    ],
+
+    "courses": [
+      {
+        "id": "course_01",
+        "courseCode": "CS101",
+        "courseName": "Introduction to Programming",
+        "credits": 3,
+        "level": "Beginner",
+        "teacherId": "teacher_01",
+        "teacherName": "Dr. Sarah Johnson",
+        "department": "Computer Science",
+        "semester": "Fall 2024",
+        "maxStudents": 35,
+        "enrolledStudents": 28,
+        "schedule": {
+          "days": ["Monday", "Wednesday", "Friday"],
+          "time": "10:00-11:30 AM",
+          "room": "Room 142"
+        },
+        "description": "Comprehensive course covering introduction to programming concepts and practical applications.",
+        "prerequisites": [],
+        "status": "active",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      },
+      {
+        "id": "course_02",
+        "courseCode": "CS201",
+        "courseName": "Data Structures & Algorithms",
+        "credits": 4,
+        "level": "Intermediate",
+        "teacherId": "teacher_01",
+        "teacherName": "Dr. Sarah Johnson",
+        "department": "Computer Science",
+        "semester": "Fall 2024",
+        "maxStudents": 42,
+        "enrolledStudents": 25,
+        "schedule": {
+          "days": ["Monday", "Wednesday", "Friday"],
+          "time": "10:00-11:30 AM",
+          "room": "Room 187"
+        },
+        "description": "Comprehensive course covering data structures & algorithms concepts and practical applications.",
+        "prerequisites": ["CS101"],
+        "status": "active",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      }
+    ],
+
+    "activities": [
+      {
+        "id": "activity_0001",
+        "studentId": "student_001",
+        "studentName": "Alice Johnson",
+        "courseId": "course_02",
+        "courseName": "Data Structures & Algorithms",
+        "teacherId": "teacher_01",
+        "activityType": "assignment_submission",
+        "title": "Data Structures & Algorithms Assignment #3",
+        "description": "Completed and submitted assignment with detailed solutions",
+        "timestamp": "2024-09-25T14:30:00.000Z",
+        "submissionTime": "2024-09-25T13:45:00.000Z",
+        "score": 8,
+        "maxScore": 10,
+        "quality": 87,
+        "duration": 95,
+        "difficulty": 4.2,
+        "engagementLevel": 8.5,
+        "feedback": "Excellent work! Keep up the great effort.",
+        "status": "completed",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      },
+      {
+        "id": "activity_0002",
+        "studentId": "student_001",
+        "studentName": "Alice Johnson",
+        "courseId": "course_01",
+        "courseName": "Introduction to Programming",
+        "teacherId": "teacher_01",
+        "activityType": "quiz_completion",
+        "title": "Introduction to Programming Quiz - Chapter 7",
+        "description": "Successfully completed online quiz with multiple choice and short answers",
+        "timestamp": "2024-09-24T16:20:00.000Z",
+        "submissionTime": "2024-09-24T15:55:00.000Z",
+        "score": 9,
+        "maxScore": 10,
+        "quality": 92,
+        "duration": 45,
+        "difficulty": 3.1,
+        "engagementLevel": 9.2,
+        "feedback": "Outstanding submission! Exceeded expectations.",
+        "status": "completed",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      },
+      {
+        "id": "activity_0003",
+        "studentId": "student_002",
+        "studentName": "Bob Smith",
+        "courseId": "course_01",
+        "courseName": "Introduction to Programming",
+        "teacherId": "teacher_01",
+        "activityType": "discussion_participation",
+        "title": "Discussion Forum - Introduction to Programming",
+        "description": "Actively participated in course discussion forum with meaningful contributions",
+        "timestamp": "2024-09-23T11:15:00.000Z",
+        "submissionTime": "2024-09-23T10:30:00.000Z",
+        "score": 6,
+        "maxScore": 10,
+        "quality": 74,
+        "duration": 32,
+        "difficulty": 2.8,
+        "engagementLevel": 6.7,
+        "feedback": "Good effort! Room for improvement in some areas.",
+        "status": "completed",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      }
+    ],
+
+    "system": {
+      "stats": {
+        "totalStudents": 20,
+        "totalTeachers": 5,
+        "totalCourses": 8,
+        "totalActivities": 350,
+        "avgEngagement": "7.8",
+        "activeUsers": 14,
+        "systemHealth": 98,
+        "lastUpdated": "2024-09-29T10:30:00.000Z",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      }
+    }
+  },
+
+  "sample_queries": {
+    "get_all_students": {
+      "query": "db.students.find({})",
+      "description": "Retrieve all student records"
+    },
+    "get_student_activities": {
+      "query": "db.activities.find({ studentId: 'student_001' })",
+      "description": "Get all activities for a specific student"
+    },
+    "get_recent_activities": {
+      "query": "db.activities.find({}).sort({ timestamp: -1 }).limit(20)",
+      "description": "Get the 20 most recent activities"
+    },
+    "get_high_engagement_activities": {
+      "query": "db.activities.find({ engagementLevel: { $gte: 8.0 } })",
+      "description": "Find activities with high engagement (8.0+)"
+    },
+    "get_courses_by_department": {
+      "query": "db.courses.find({ department: 'Computer Science' })",
+      "description": "Get all courses in Computer Science department"
+    },
+    "get_active_students": {
+      "query": "db.students.find({ status: 'active' })",
+      "description": "Get all active students"
+    },
+    "get_teacher_courses": {
+      "query": "db.courses.find({ teacherId: 'teacher_01' })",
+      "description": "Get all courses taught by a specific teacher"
+    },
+    "calculate_avg_score_by_course": {
+      "query": "db.activities.aggregate([{ $group: { _id: '$courseId', avgScore: { $avg: '$score' } } }])",
+      "description": "Calculate average score per course"
+    },
+    "get_activities_by_type": {
+      "query": "db.activities.find({ activityType: 'assignment_submission' })",
+      "description": "Get all assignment submission activities"
+    },
+    "get_system_statistics": {
+      "query": "db.system.findOne({ _id: 'stats' })",
+      "description": "Get current system statistics"
+    }
+  },
+
+  "indexes_suggested": {
+    "students": [
+      { "fields": { "email": 1 }, "unique": true },
+      { "fields": { "studentId": 1 }, "unique": true },
+      { "fields": { "status": 1 } },
+      { "fields": { "major": 1 } },
+      { "fields": { "year": 1 } }
+    ],
+    "teachers": [
+      { "fields": { "email": 1 }, "unique": true },
+      { "fields": { "employeeId": 1 }, "unique": true },
+      { "fields": { "department": 1 } },
+      { "fields": { "status": 1 } }
+    ],
+    "courses": [
+      { "fields": { "courseCode": 1 }, "unique": true },
+      { "fields": { "teacherId": 1 } },
+      { "fields": { "department": 1 } },
+      { "fields": { "semester": 1 } },
+      { "fields": { "status": 1 } }
+    ],
+    "activities": [
+      { "fields": { "studentId": 1 } },
+      { "fields": { "courseId": 1 } },
+      { "fields": { "teacherId": 1 } },
+      { "fields": { "timestamp": -1 } },
+      { "fields": { "activityType": 1 } },
+      { "fields": { "status": 1 } },
+      { "fields": { "engagementLevel": -1 } },
+      { "fields": { "studentId": 1, "timestamp": -1 } }
+    ]
+  },
+
+  "metadata": {
+    "database_name": "orbit_student_engagement",
+    "total_collections": 4,
+    "total_documents": 383,
+    "data_generated": "2024-09-29T10:30:00.000Z",
+    "generator_version": "1.0.0",
+    "firebase_project": "orbit-65e7a"
+  }
+}
