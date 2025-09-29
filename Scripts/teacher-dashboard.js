@@ -1,15 +1,15 @@
 // Teacher Dashboard JavaScript functionality
 document.addEventListener('DOMContentLoaded', async () => {
-    // Use new role-based authentication - teacher role required
-    const authResult = await AuthUtils.requireAuth('teacher');
+    // Simple authentication check - no role requirements
+    const authResult = await AuthUtils.requireAuth();
     
     if (authResult) {
-        const { user, userRole } = authResult;
-        console.log('Initializing Teacher Dashboard for user:', user.email, 'Role:', userRole);
+        const { user } = authResult;
+        console.log('Initializing Teacher Dashboard for user:', user.email);
         
         // Get full user profile for additional data
         const userProfile = await window.authManager.getUserProfile(user.uid);
-        initializeTeacherDashboard(user, userProfile, userRole);
+        initializeTeacherDashboard(user, userProfile);
     }
 });
 

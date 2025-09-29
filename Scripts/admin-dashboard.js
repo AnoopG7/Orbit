@@ -1,19 +1,19 @@
 // Admin Dashboard JavaScript functionality
 document.addEventListener('DOMContentLoaded', async () => {
-    // Use new role-based authentication - admin role required
-    const authResult = await AuthUtils.requireAuth('admin');
+    // Simple authentication check - no role requirements
+    const authResult = await AuthUtils.requireAuth();
     
     if (authResult) {
-        const { user, userRole } = authResult;
-        console.log('Initializing Admin Dashboard for user:', user.email, 'Role:', userRole);
+        const { user } = authResult;
+        console.log('Initializing Admin Dashboard for user:', user.email);
         
         // Get full user profile for additional data
         const userProfile = await window.authManager.getUserProfile(user.uid);
-        initializeAdminDashboard(user, userProfile, userRole);
+        initializeAdminDashboard(user, userProfile);
     }
 });
 
-async function initializeAdminDashboard(user, userProfile, userRole) {
+async function initializeAdminDashboard(user, userProfile) {
     // Initialize admin dashboard components
     await Promise.all([
         loadSystemStats(),

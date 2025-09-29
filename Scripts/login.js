@@ -1,11 +1,55 @@
 // Login Page JavaScript functionality
+function waitForFirebase() {
+    return new Promise((resolve) => {
+        if (window.authManager && typeof AuthUtils !== 'undefined') {
+            resolve();
+            return;
+        }
+        
+        // Wait for Firebase ready event
+        window.addEventListener('firebaseReady', () => {
+            // Wait a bit more for AuthUtils to load
+            setTimeout(() => {
+                if (typeof AuthUtils !== 'undefined') {
+                    resolve();
+                } else {
+                    // Retry after AuthUtils loads
+                    const checkAuthUtils = setInterval(() => {
+                        if (typeof AuthUtils !== 'undefined') {
+                            clearInterval(checkAuthUtils);
+                            resolve();
+                        }
+                    }, 100);
+                }
+            }, 100);
+        });
+        
+        // Fallback timeout
+        setTimeout(() => {
+            console.warn('Firebase/AuthUtils not loaded within timeout, proceeding anyway');
+            resolve();
+        }, 5000);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOM loaded, waiting for Firebase...');
+    
+    // Wait for Firebase to be ready
+    await waitForFirebase();
+    
+    console.log('Firebase ready, initializing login page...');
+    
     // Check if user is already logged in
     if (window.authManager) {
-        await window.authManager.waitForAuthState();
-        if (window.authManager.isAuthenticated()) {
-            AuthUtils.redirectToDashboard(window.authManager.getCurrentUser());
-            return;
+        try {
+            await window.authManager.waitForAuthState();
+            if (window.authManager.isAuthenticated()) {
+                window.location.href = '/pages/student-dashboard.html';
+                return;
+            }
+        } catch (error) {
+            console.warn('Error checking auth state:', error);
         }
     }
     
@@ -43,15 +87,24 @@ function initializeLoginPage() {
     const passwordStrengthText = document.getElementById('password-strength-text');
     const confirmPassword = document.getElementById('confirm-password');
     
-    // Initialize form validators
-    const loginValidator = new FormValidator(loginForm);
-    const signupValidator = new FormValidator(signupForm);
-    const resetValidator = new FormValidator(resetForm);
+    // Initialize form validators (with error handling)
+    let loginValidator, signupValidator, resetValidator;
+    
+    try {
+        if (typeof FormValidator !== 'undefined') {
+            loginValidator = new FormValidator(loginForm);
+            signupValidator = new FormValidator(signupForm);
+            resetValidator = new FormValidator(resetForm);
+        } else {
+            console.warn('FormValidator not available, skipping validation setup');
+        }
+    } catch (error) {
+        console.error('Error initializing form validators:', error);
+    }
     
     // Add validation rules
     loginValidator.addValidator('email', AuthUtils.validateEmail, 'Please enter a valid email address');
     loginValidator.addValidator('password', (password) => password.length >= 6, 'Password must be at least 6 characters');
-    loginValidator.addValidator('role', (role) => ['student', 'teacher', 'admin'].includes(role), 'Please select your role');
     
     signupValidator.addValidator('name', AuthUtils.validateDisplayName, 'Name must be at least 2 characters');
     signupValidator.addValidator('email', AuthUtils.validateEmail, 'Please enter a valid email address');
@@ -59,7 +112,6 @@ function initializeLoginPage() {
     signupValidator.addValidator('confirmPassword', (confirmPwd) => {
         return confirmPwd === signupPassword.value;
     }, 'Passwords do not match');
-    signupValidator.addValidator('role', (role) => ['student', 'teacher', 'admin'].includes(role), 'Please select your role');
     
     resetValidator.addValidator('email', AuthUtils.validateEmail, 'Please enter a valid email address');
     
@@ -176,7 +228,6 @@ function initializeLoginPage() {
         
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-        const selectedRole = document.getElementById('login-role').value;
         const rememberMe = document.getElementById('remember-me').checked;
         
         const loginButton = document.getElementById('login-submit');
@@ -186,17 +237,6 @@ function initializeLoginPage() {
             const result = await window.authManager.signIn(email, password);
             
             if (result.success) {
-                // Verify the user's stored role matches the selected role
-                const storedRole = await AuthUtils.getUserRole(result.user);
-                
-                if (storedRole !== selectedRole) {
-                    AuthUtils.showToast(`Access denied: Your account role is '${storedRole}', not '${selectedRole}'`, 'error');
-                    // Clear the form
-                    document.getElementById('login-password').value = '';
-                    document.getElementById('login-role').value = '';
-                    return;
-                }
-                
                 AuthUtils.showToast('Successfully signed in! Redirecting...', 'success');
                 
                 // Save remember me preference
@@ -204,9 +244,9 @@ function initializeLoginPage() {
                     localStorage.setItem('rememberMe', 'true');
                 }
                 
-                // Redirect after short delay
+                // Redirect to student dashboard after short delay
                 setTimeout(() => {
-                    AuthUtils.redirectToDashboard(result.user, selectedRole);
+                    window.location.href = '/pages/student-dashboard.html';
                 }, 1500);
             } else {
                 AuthUtils.showToast(result.error, 'error');
@@ -235,7 +275,6 @@ function initializeLoginPage() {
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
         const confirmPwd = document.getElementById('confirm-password').value;
-        const selectedRole = document.getElementById('signup-role').value;
         const termsAgreed = document.getElementById('terms-agreement').checked;
         
         if (password !== confirmPwd) {
@@ -255,21 +294,12 @@ function initializeLoginPage() {
             const result = await window.authManager.signUp(email, password, name);
             
             if (result.success) {
-                // Set the user's role in Firestore
-                await AuthUtils.setUserRole(result.user, selectedRole);
+                AuthUtils.showToast('Account created successfully! Redirecting to your dashboard...', 'success');
                 
-                const roleMessage = selectedRole === 'admin' ? 
-                    'Account created! Admin access requires approval. Please contact existing administrators.' :
-                    'Account created successfully!';
-                
-                AuthUtils.showToast(`${roleMessage} Please sign in with your new account.`, 'success');
-                
-                // Switch to login form after successful signup
+                // Redirect to student dashboard after successful signup
                 setTimeout(() => {
-                    showLoginForm();
-                    document.getElementById('login-email').value = email;
-                    document.getElementById('login-role').value = selectedRole;
-                }, 2000);
+                    window.location.href = '/pages/student-dashboard.html';
+                }, 1500);
             } else {
                 AuthUtils.showToast(result.error, 'error');
                 signupForm.classList.add('error-shake');
@@ -321,23 +351,10 @@ function initializeLoginPage() {
             const result = await window.authManager.signInWithGoogle();
             
             if (result.success) {
-                let userRole = await AuthUtils.getUserRole(result.user);
-                
-                // If this is a new user (signup) or user has no role, set default role
-                if (!userRole || (isSignup && userRole === 'student')) {
-                    // For Google signup, default to student role
-                    // In a real application, you might want to show a role selection modal
-                    const defaultRole = 'student';
-                    await AuthUtils.setUserRole(result.user, defaultRole);
-                    userRole = defaultRole;
-                    
-                    AuthUtils.showToast(`Welcome to Orbit! You've been registered as a ${defaultRole}. Contact an administrator to change your role if needed.`, 'success');
-                } else {
-                    AuthUtils.showToast('Successfully signed in with Google!', 'success');
-                }
+                AuthUtils.showToast('Successfully signed in with Google!', 'success');
                 
                 setTimeout(() => {
-                    AuthUtils.redirectToDashboard(result.user, userRole);
+                    window.location.href = '/pages/student-dashboard.html';
                 }, 1500);
             } else {
                 AuthUtils.showToast(result.error, 'error');

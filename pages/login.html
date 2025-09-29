@@ -103,17 +103,7 @@
                         <div id="password-error" class="form-error"></div>
                     </div>
                     
-                    <!-- Role Selection for Sign In -->
-                    <div class="form-group">
-                        <label for="login-role" class="form-label">I am a...</label>
-                        <select id="login-role" name="role" class="form-input" required>
-                            <option value="">Select your role</option>
-                            <option value="student">Student</option>
-                            <option value="teacher">Teacher</option>
-                            <option value="admin">Administrator</option>
-                        </select>
-                        <div id="login-role-error" class="form-error"></div>
-                    </div>
+
                     
                     <!-- Remember Me & Forgot Password -->
                     <div class="flex items-center justify-between text-sm">
@@ -236,18 +226,7 @@
                         <div id="confirm-password-error" class="form-error"></div>
                     </div>
                     
-                    <!-- Role Selection for Sign Up -->
-                    <div class="form-group">
-                        <label for="signup-role" class="form-label">I want to join as a...</label>
-                        <select id="signup-role" name="role" class="form-input" required>
-                            <option value="">Select your role</option>
-                            <option value="student">Student</option>
-                            <option value="teacher">Teacher</option>
-                            <option value="admin">Administrator</option>
-                        </select>
-                        <div id="signup-role-error" class="form-error"></div>
-                        <p class="text-xs text-muted mt-1">Note: Admin access requires approval from existing administrators</p>
-                    </div>
+
                     
                     <!-- Terms and Conditions -->
                     <div class="flex items-start gap-2">
@@ -339,13 +318,13 @@
     
     <!-- Firebase Scripts -->
     <script type="module" src="../firebase/app.js"></script>
-    <script src="../firebase/auth.js"></script>
+    <script defer src="../firebase/auth.js"></script>
     
     <!-- Component Scripts -->
     <script src="../components/navbar.js"></script>
     <script src="../components/footer.js"></script>
     
     <!-- Login Page Script -->
-    <script type="module" src="../Scripts/login.js"></script>
+    <script defer src="../Scripts/login.js"></script>
 </body>
 </html>

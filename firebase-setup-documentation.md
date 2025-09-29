@@ -63,16 +63,23 @@ This guide provides step-by-step instructions for setting up and verifying the r
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read/write their own user document
+    // Users collection rules
     match /users/{userId} {
+      // Allow users to read/write their own document
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow creation of new user document during signup (when document doesn't exist)
+      allow create: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.data.keys().hasAll(['email', 'role', 'createdAt']) &&
+        request.resource.data.role in ['student', 'teacher', 'admin'];
       
       // Allow admins to read all user documents
       allow read: if request.auth != null && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       
-      // Only allow admins to change user roles
+      // Only allow admins to change user roles (but not during initial creation)
       allow update: if request.auth != null &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' &&

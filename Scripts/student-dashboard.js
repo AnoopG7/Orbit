@@ -34,16 +34,16 @@
             return;
         }
 
-        // Use new role-based authentication - student role required
-        const authResult = await AuthUtils.requireAuth('student');
+        // Simple authentication check
+        const authResult = await AuthUtils.requireAuth();
         
         if (!authResult) {
             // Auth failed, user will be redirected by requireAuth
             return;
         }
 
-        const { user, userRole } = authResult;
-        console.log('Initializing Student Dashboard for user:', user.email, 'Role:', userRole);
+        const { user } = authResult;
+        console.log('Initializing Student Dashboard for user:', user.email);
         isInitialized = true;
         
         // Initialize dashboard components
@@ -53,8 +53,8 @@
         setupRealTimeUpdates();
         initializeQuickActions();
         
-        // Load user data with role info
-        loadStudentData(user, userRole);
+        // Load user data
+        loadStudentData(user);
         
         // Listen for auth state changes to handle logout
         setupAuthStateListener();

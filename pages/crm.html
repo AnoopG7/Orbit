@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - Student Engagement Management - Orbit</title>
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../styling/base.css">
+    <link rel="stylesheet" href="../styling/components.css">
+    <link rel="stylesheet" href="../styling/global.css">
+    
+    <!-- Component Loader Script -->
+    <script src="../Scripts/component-loader.js"></script>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛸%3C/text%3E%3C/svg%3E">
+    
+    <!-- Theme script (inline for performance) -->
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const theme = savedTheme || 'dark';
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (!localStorage.getItem('theme')) {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+        });
+    </script>
+</head>
+<body>
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <!-- Navigation Component -->
+        <div id="navbar-container" data-component="../components/navbar.html" data-show-loading></div>
+        
+        <!-- Main Content -->
+        <main class="main-content container py-6">
+            <!-- CRM Header -->
+            <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue to-pink bg-clip-text text-transparent">
+                        Student Relationship Management
+                    </h1>
+                    <p class="text-secondary text-lg">Manage student engagement, interactions, and learning relationships</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="btn btn-outline" id="export-crm-data">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Export Data
+                    </button>
+                    <button class="btn btn-primary" id="add-student-btn">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        Add Student
+                    </button>
+                </div>
+            </header>
+
+            <!-- CRM Stats Overview -->
+            <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-secondary mb-1">Total Students</p>
+                                <p class="text-3xl font-bold text-blue" id="total-students">-</p>
+                            </div>
+                            <div class="text-4xl opacity-60">👥</div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-sm text-success">↗ 12% this month</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-secondary mb-1">Active Engagements</p>
+                                <p class="text-3xl font-bold text-green" id="active-engagements">-</p>
+                            </div>
+                            <div class="text-4xl opacity-60">💬</div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-sm text-success">↗ 8% this week</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-secondary mb-1">Avg. Engagement Score</p>
+                                <p class="text-3xl font-bold text-purple" id="avg-engagement">-</p>
+                            </div>
+                            <div class="text-4xl opacity-60">📈</div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-sm text-warning">→ 0% this week</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-secondary mb-1">Follow-ups Needed</p>
+                                <p class="text-3xl font-bold text-orange" id="followups-needed">-</p>
+                            </div>
+                            <div class="text-4xl opacity-60">⚠️</div>
+                        </div>
+                        <div class="mt-4">
+                            <span class="text-sm text-error">↗ 3 new today</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CRM Main Content -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column - Student List & Search -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Student Search and Filters -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Student Management</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                                <div class="flex-1">
+                                    <input type="text" id="student-search" class="form-input" placeholder="Search students by name, email, or ID...">
+                                </div>
+                                <select id="engagement-filter" class="form-select" style="min-width: 160px;">
+                                    <option value="all">All Levels</option>
+                                    <option value="high">High Engagement</option>
+                                    <option value="medium">Medium Engagement</option>
+                                    <option value="low">Low Engagement</option>
+                                    <option value="at-risk">At Risk</option>
+                                </select>
+                                <select id="status-filter" class="form-select" style="min-width: 140px;">
+                                    <option value="all">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="needs-followup">Needs Follow-up</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Student List -->
+                            <div id="students-list" class="space-y-4">
+                                <!-- Students will be loaded dynamically -->
+                                <div class="text-center py-8 text-secondary">
+                                    <div class="text-4xl mb-3">👨‍🎓</div>
+                                    <p>Loading student data...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Pagination -->
+                            <div class="flex justify-between items-center mt-6 pt-4 border-t border-primary">
+                                <span class="text-sm text-muted">Showing 1-10 of 50 students</span>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-ghost btn-sm" disabled>Previous</button>
+                                    <button class="btn btn-ghost btn-sm">Next</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Interactions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Student Interactions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="recent-interactions" class="space-y-4">
+                                <!-- Interactions will be loaded dynamically -->
+                                <div class="text-center py-8 text-secondary">
+                                    <div class="text-4xl mb-3">💬</div>
+                                    <p>Loading recent interactions...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Quick Actions & Insights -->
+                <div class="space-y-6">
+                    <!-- Quick Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Quick Actions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="space-y-3">
+                                <button class="btn btn-outline w-full flex items-center gap-3">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    Send Bulk Email
+                                </button>
+                                <button class="btn btn-outline w-full flex items-center gap-3">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    Generate Report
+                                </button>
+                                <button class="btn btn-outline w-full flex items-center gap-3">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Schedule Follow-up
+                                </button>
+                                <button class="btn btn-outline w-full flex items-center gap-3">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7H4l5-5v5z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6"/>
+                                    </svg>
+                                    Import Students
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Engagement Trends -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Engagement Trends</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="engagement-trend-chart" class="h-48 flex items-center justify-center text-secondary">
+                                <div class="text-center">
+                                    <div class="text-4xl mb-3">📊</div>
+                                    <p class="text-sm">Engagement trend visualization</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Needing Attention -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Attention Required</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="attention-list" class="space-y-3">
+                                <!-- Attention items will be loaded dynamically -->
+                                <div class="text-center py-6 text-secondary">
+                                    <div class="text-3xl mb-2">✅</div>
+                                    <p class="text-sm">All students on track!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Tasks -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Upcoming Tasks</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="upcoming-tasks" class="space-y-3">
+                                <!-- Tasks will be loaded dynamically -->
+                                <div class="text-center py-6 text-secondary">
+                                    <div class="text-3xl mb-2">📅</div>
+                                    <p class="text-sm">No tasks scheduled</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer Component -->
+        <div id="footer-container" data-component="../components/footer.html" data-show-loading></div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module" src="../firebase/app.js"></script>
+    <script src="../firebase/auth.js"></script>
+    
+    <!-- Component Scripts -->
+    <script src="../components/navbar.js"></script>
+    <script src="../components/footer.js"></script>
+    
+    <!-- CRM Page Script -->
+    <script defer src="../Scripts/crm.js"></script>
+</body>
+</html>

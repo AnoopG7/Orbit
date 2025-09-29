@@ -94,12 +94,11 @@ class AuthManager {
             // Send email verification
             await sendEmailVerification(userCredential.user);
 
-            // Create user document in Firestore
+            // Create user document in Firestore (without role - will be set separately)
             await this.createOrUpdateUserProfile(userCredential.user, {
                 displayName,
                 email,
                 createdAt: serverTimestamp(),
-                role: 'student', // Default role
                 emailVerified: false
             });
 
@@ -235,6 +234,23 @@ class AuthManager {
 
 // Create global auth manager instance
 window.authManager = new AuthManager();
+
+// Make other Firebase objects globally available
+window.auth = auth;
+window.db = db;
+window.firebaseConfig = firebaseConfig;
+window.updateDoc = updateDoc;
+window.getDoc = getDoc;
+window.doc = doc;
+window.setDoc = setDoc;
+window.serverTimestamp = serverTimestamp;
+
+// Dispatch ready event when Firebase is fully initialized
+window.dispatchEvent(new CustomEvent('firebaseReady', {
+    detail: { authManager: window.authManager, auth, db }
+}));
+
+console.log('Firebase initialized and authManager created:', window.authManager);
 
 // Export for module usage
 export { AuthManager, auth, db };

@@ -15,7 +15,7 @@
             if (linkPath === currentPath || 
                 (currentPath === '/' && link.getAttribute('data-page') === 'home') ||
                 (currentPath.includes('student-dashboard') && link.getAttribute('data-page') === 'student-dashboard') ||
-                (currentPath.includes('teacher-dashboard') && link.getAttribute('data-page') === 'analytics') ||
+                (currentPath.includes('crm') && link.getAttribute('data-page') === 'crm') ||
                 (currentPath.includes('admin-dashboard') && link.getAttribute('data-page') === 'admin')) {
                 link.classList.add('active');
             }
