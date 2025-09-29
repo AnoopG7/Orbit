@@ -482,7 +482,7 @@ async function loadIntelligentUsersList() {
         
         // Enhanced user display with analytics insights
         usersContainer.innerHTML = users.map(user => `
-            <div class="flex items-center justify-between p-4 bg-tertiary rounded-lg hover:bg-hover transition-colors">
+            <div class="user-card user-card-${user.role} flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="relative">
                         <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">

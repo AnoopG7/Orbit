@@ -660,3 +660,64 @@
         max-width: calc(100% - 2rem);
     }
 }
+
+/* === CUSTOM SCROLLBARS === */
+/* Custom scrollbar styling for scrollable containers */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Firefox scrollbar styling */
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* === USER CARD STYLING === */
+.user-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    margin-bottom: var(--space-4);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all var(--transition-fast);
+}
+
+.user-card:hover {
+    background: var(--bg-hover);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.user-card:last-child {
+    margin-bottom: 0;
+}
+
+/* Role-specific user card styling */
+.user-card-student {
+    border-left: 4px solid var(--primary-blue);
+}
+
+.user-card-teacher {
+    border-left: 4px solid var(--accent-purple);
+}
+
+.user-card-admin {
+    border-left: 4px solid var(--error-red);
+}
