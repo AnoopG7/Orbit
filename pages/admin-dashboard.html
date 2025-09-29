@@ -260,6 +260,59 @@
     <script type="module" src="../firebase/app.js"></script>
     <script src="../firebase/auth.js"></script>
     
+    <!-- Authentication Loading Overlay -->
+    <div id="auth-loading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+        <div class="text-center">
+            <div class="spinner mb-4" style="width: 3rem; height: 3rem; border: 3px solid var(--border-primary); border-top: 3px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p class="text-lg font-medium">🔐 Checking authentication...</p>
+        </div>
+    </div>
+    
+    <!-- Authentication Guard -->
+    <script>
+        // Authentication guard - redirect to login if not authenticated
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🔐 Checking authentication for admin dashboard...');
+            
+            // Wait for Firebase to load
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (!window.authManager && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (!window.authManager) {
+                console.warn('⚠️ AuthManager not loaded, redirecting to login');
+                window.location.href = '/pages/login.html';
+                return;
+            }
+            
+            try {
+                // Wait for auth state to be determined
+                await window.authManager.waitForAuthState();
+                
+                if (!window.authManager.isAuthenticated()) {
+                    console.log('❌ User not authenticated, redirecting to login');
+                    window.location.href = '/pages/login.html';
+                    return;
+                }
+                
+                console.log('✅ User authenticated, loading admin dashboard');
+                
+                // Hide loading overlay
+                const loadingOverlay = document.getElementById('auth-loading');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('🚨 Authentication check failed:', error);
+                window.location.href = '/pages/login.html';
+            }
+        });
+    </script>
+    
     <!-- Component Scripts -->
     <script src="../components/navbar.js"></script>
     <script src="../components/footer.js"></script>
