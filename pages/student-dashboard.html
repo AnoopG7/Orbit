@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Dashboard - Orbit</title>
+    <title>Student Activity Dashboard - Orbit</title>
     
     <!-- CSS Files -->
     <link rel="stylesheet" href="../styling/base.css">
     <link rel="stylesheet" href="../styling/components.css">
     <link rel="stylesheet" href="../styling/global.css">
+    
+    <!-- Chart.js for dynamic charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Component Loader Script -->
     <script src="../Scripts/component-loader.js"></script>
@@ -41,293 +44,143 @@
             <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
                 <div>
                     <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-blue to-pink bg-clip-text text-transparent">
-                        Student Dashboard
+                        Activity Dashboard
                     </h1>
-                    <p class="text-secondary text-lg">Track your learning progress and achievements</p>
+                    <p class="text-secondary text-lg">Track your learning activities and engagement</p>
+                    <div class="flex items-center gap-4 mt-2">
+                        <span class="text-sm text-muted">Last updated:</span>
+                        <span id="last-updated" class="text-sm font-medium text-blue"></span>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-center lg:text-right">
                         <p class="text-sm text-muted">Welcome back,</p>
-                        <p class="font-bold text-xl text-primary" id="student-name">Alex Johnson</p>
-                        <p class="text-xs text-muted">Student ID: ST2024001</p>
+                        <p class="font-bold text-xl text-primary" id="student-name"></p>
+                        <p class="text-xs text-muted" id="student-id"></p>
+                        <p class="text-xs text-blue" id="student-major"></p>
                     </div>
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue to-pink flex items-center justify-center text-white font-bold text-lg">
-                        AJ
+                    <div id="student-avatar" class="w-12 h-12 rounded-full bg-gradient-to-br from-blue to-pink flex items-center justify-center text-white font-bold text-lg">
                     </div>
                 </div>
             </header>
 
-            <!-- Quick Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Active Courses -->
-                <div class="card hover:shadow-lg transition-all duration-300 group">
+            <!-- Activity Overview Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                <!-- Assignment Uploads -->
+                <div class="card hover:shadow-lg transition-all duration-300 group cursor-pointer" onclick="showActivityDetails('assignments')">
                     <div class="card-body flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-muted mb-1">Active Courses</p>
-                            <p class="text-3xl font-bold text-blue group-hover:scale-110 transition-transform">5</p>
-                            <p class="text-xs text-accent-success">+1 this semester</p>
+                            <p class="text-sm text-muted mb-1">Assignment Uploads</p>
+                            <p class="text-3xl font-bold text-blue group-hover:scale-110 transition-transform" id="assignments-count"></p>
+                            <p class="text-xs" id="assignments-trend"></p>
                         </div>
-                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">📚</div>
+                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">�</div>
                     </div>
                 </div>
 
-                <!-- Pending Assignments -->
-                <div class="card hover:shadow-lg transition-all duration-300 group">
+                <!-- Event Participation -->
+                <div class="card hover:shadow-lg transition-all duration-300 group cursor-pointer" onclick="showActivityDetails('events')">
                     <div class="card-body flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-muted mb-1">Assignments Due</p>
-                            <p class="text-3xl font-bold text-pink group-hover:scale-110 transition-transform">3</p>
-                            <p class="text-xs text-accent-warning">2 due this week</p>
+                            <p class="text-sm text-muted mb-1">Event Participation</p>
+                            <p class="text-3xl font-bold text-pink group-hover:scale-110 transition-transform" id="events-count"></p>
+                            <p class="text-xs" id="events-trend"></p>
                         </div>
-                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">📝</div>
+                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">🎉</div>
                     </div>
                 </div>
 
-                <!-- Overall GPA -->
-                <div class="card hover:shadow-lg transition-all duration-300 group">
+                <!-- Class Participation -->
+                <div class="card hover:shadow-lg transition-all duration-300 group cursor-pointer" onclick="showActivityDetails('participation')">
                     <div class="card-body flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-muted mb-1">Current GPA</p>
-                            <p class="text-3xl font-bold text-accent-success group-hover:scale-110 transition-transform">3.7</p>
-                            <p class="text-xs text-accent-success">+0.2 this semester</p>
+                            <p class="text-sm text-muted mb-1">Class Participation</p>
+                            <p class="text-3xl font-bold text-accent-success group-hover:scale-110 transition-transform" id="participation-count"></p>
+                            <p class="text-xs" id="participation-trend"></p>
                         </div>
-                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">🎯</div>
+                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">�</div>
                     </div>
                 </div>
 
-                <!-- Study Streak -->
-                <div class="card hover:shadow-lg transition-all duration-300 group">
+                <!-- Peer Collaboration -->
+                <div class="card hover:shadow-lg transition-all duration-300 group cursor-pointer" onclick="showActivityDetails('collaboration')">
                     <div class="card-body flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-muted mb-1">Study Streak</p>
-                            <p class="text-3xl font-bold text-accent-warning group-hover:scale-110 transition-transform">15</p>
-                            <p class="text-xs text-muted">days in a row</p>
+                            <p class="text-sm text-muted mb-1">Peer Collaboration</p>
+                            <p class="text-3xl font-bold text-accent-warning group-hover:scale-110 transition-transform" id="collaboration-count"></p>
+                            <p class="text-xs" id="collaboration-trend"></p>
                         </div>
-                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">🔥</div>
+                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">👥</div>
+                    </div>
+                </div>
+
+                <!-- Quiz Performance -->
+                <div class="card hover:shadow-lg transition-all duration-300 group cursor-pointer" onclick="showActivityDetails('quizzes')">
+                    <div class="card-body flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-muted mb-1">Quiz Performance</p>
+                            <p class="text-3xl font-bold text-purple group-hover:scale-110 transition-transform" id="quizzes-count"></p>
+                            <p class="text-xs" id="quizzes-trend"></p>
+                        </div>
+                        <div class="text-4xl opacity-20 group-hover:opacity-40 transition-opacity">🧠</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
-                <!-- Left Column: Course Progress & Recent Activity -->
-                <div class="lg:col-span-8 space-y-8">
-                    <!-- Course Progress -->
-                    <div class="card">
-                        <div class="card-header flex items-center justify-between">
-                            <h3 class="card-title flex items-center gap-2">
-                                📊 Course Progress
-                            </h3>
-                            <button class="btn btn-ghost btn-sm">View All</button>
-                        </div>
-                        <div class="card-body space-y-6">
-                            <!-- Mathematics -->
-                            <div class="relative">
-                                <div class="flex justify-between items-center mb-2">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg bg-blue/20 flex items-center justify-center">
-                                            <span class="text-blue font-bold">M</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">Advanced Mathematics</span>
-                                            <p class="text-sm text-muted">Prof. Sarah Wilson</p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-lg font-bold text-blue">87%</span>
-                                        <p class="text-xs text-muted">Grade: A-</p>
-                                    </div>
-                                </div>
-                                <div class="w-full bg-tertiary rounded-full h-2 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-blue to-blue-dark h-2 rounded-full transition-all duration-1000" style="width: 87%"></div>
-                                </div>
-                            </div>
-                                    
-                            <!-- Physics -->
-                            <div class="relative">
-                                <div class="flex justify-between items-center mb-2">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg bg-pink/20 flex items-center justify-center">
-                                            <span class="text-pink font-bold">P</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">Quantum Physics</span>
-                                            <p class="text-sm text-muted">Prof. Michael Chen</p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-lg font-bold text-pink">92%</span>
-                                        <p class="text-xs text-muted">Grade: A</p>
-                                    </div>
-                                </div>
-                                <div class="w-full bg-tertiary rounded-full h-2 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-pink to-pink-dark h-2 rounded-full transition-all duration-1000" style="width: 92%"></div>
-                                </div>
-                            </div>
-                                    
-                            <!-- Computer Science -->
-                            <div class="relative">
-                                <div class="flex justify-between items-center mb-2">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 rounded-lg bg-accent-success/20 flex items-center justify-center">
-                                            <span class="text-accent-success font-bold">C</span>
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">Data Structures & Algorithms</span>
-                                            <p class="text-sm text-muted">Prof. Emma Rodriguez</p>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <span class="text-lg font-bold text-accent-success">95%</span>
-                                        <p class="text-xs text-muted">Grade: A+</p>
-                                    </div>
-                                </div>
-                                <div class="w-full bg-tertiary rounded-full h-2 overflow-hidden">
-                                    <div class="bg-gradient-to-r from-accent-success to-green-600 h-2 rounded-full transition-all duration-1000" style="width: 95%"></div>
-                                </div>
-                            </div>
+            <!-- Detailed Activity Sections -->
+            <div class="space-y-8 mb-8">
+                <!-- Recent Activity Timeline -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                            🕒 Recent Activity Timeline
+                        </h3>
+                        <div id="activity-timeline" class="space-y-4">
+                            <!-- Timeline items will be populated dynamically -->
                         </div>
                     </div>
-
-                    <!-- Recent Activity Feed -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title flex items-center gap-2">
-                                🎯 Recent Activity
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div id="recent-activities-container" class="space-y-4">
-                                <!-- Activities will be loaded dynamically by JavaScript -->
-                                <div class="text-center py-8 text-secondary">
-                                    <div class="text-4xl mb-3">📊</div>
-                                    <p>Loading your recent activities...</p>
-                                </div>
-                            </div>
+                </div>
+            </div>
+                        <!-- Activity Visualization Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Activity Trends Chart -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                            📊 Activity Trends
+                        </h3>
+                        <div class="relative" style="height: 300px;">
+                            <canvas id="activityTrendsChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Upcoming Tasks & Performance -->
-                <div class="lg:col-span-4 space-y-8">
-                    <!-- Upcoming Deadlines -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title flex items-center gap-2">
-                                ⏰ Upcoming Deadlines
-                            </h3>
+                <!-- Performance Distribution -->
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="text-lg font-semibold text-text mb-4 flex items-center gap-2">
+                            🎯 Performance Distribution
+                        </h3>
+                        <div class="relative" style="height: 300px;">
+                            <canvas id="performanceChart"></canvas>
                         </div>
-                        <div class="card-body space-y-3">
-                            <div class="flex items-center gap-3 p-3 rounded-lg border-l-4 border-accent-error bg-accent-error/5 hover:bg-accent-error/10 transition-colors cursor-pointer">
-                                <div class="text-xl">📋</div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-sm">Physics Lab Report</p>
-                                    <p class="text-xs text-muted">Due in 2 days</p>
-                                </div>
-                                <span class="text-xs bg-accent-error text-white px-2 py-1 rounded-full">High</span>
-                            </div>
-                                    
-                            <div class="flex items-center gap-3 p-3 rounded-lg border-l-4 border-accent-warning bg-accent-warning/5 hover:bg-accent-warning/10 transition-colors cursor-pointer">
-                                <div class="text-xl">🧮</div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-sm">Math Assignment</p>
-                                    <p class="text-xs text-muted">Due in 4 days</p>
-                                </div>
-                                <span class="text-xs bg-accent-warning text-white px-2 py-1 rounded-full">Med</span>
-                            </div>
-                                    
-                            <div class="flex items-center gap-3 p-3 rounded-lg border-l-4 border-blue bg-blue/5 hover:bg-blue/10 transition-colors cursor-pointer">
-                                <div class="text-xl">💻</div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-sm">CS Project Phase 2</p>
-                                    <p class="text-xs text-muted">Due in 1 week</p>
-                                </div>
-                                <span class="text-xs bg-blue text-white px-2 py-1 rounded-full">Low</span>
-                            </div>
-                            
-                            <button class="btn btn-primary w-full mt-4">
-                                View All Tasks
+                    </div>
+                </div>
+            </div>
+            <!-- Activity Details Modal -->
+            <div id="activity-details-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center p-4" style="display: none;">
+                <div class="bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 id="modal-title" class="text-xl font-bold text-text">Activity Details</h2>
+                            <button onclick="hideActivityDetails()" class="text-muted hover:text-text transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Performance Insights -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title flex items-center gap-2">
-                                📈 Performance Insights
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <!-- Weekly Study Time -->
-                            <div class="text-center mb-5">
-                                <div class="relative inline-flex items-center justify-center w-20 h-20">
-                                    <svg class="w-20 h-20 transform -rotate-90">
-                                        <circle cx="40" cy="40" r="32" stroke="var(--bg-tertiary)" stroke-width="6" fill="transparent"/>
-                                        <circle cx="40" cy="40" r="32" stroke="var(--primary-blue)" stroke-width="6" fill="transparent" 
-                                            stroke-dasharray="201" stroke-dashoffset="60.3" class="transition-all duration-1000"/>
-                                    </svg>
-                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span class="text-xl font-bold text-blue">28h</span>
-                                        <span class="text-xs text-muted">week</span>
-                                    </div>
-                                </div>
-                                <p class="text-xs text-muted mt-2">Goal: 30h</p>
-                            </div>
-
-                            <!-- Performance Stats -->
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-muted">Assignments On Time</span>
-                                    <span class="text-sm font-bold text-accent-success">95%</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-muted">Class Participation</span>
-                                    <span class="text-sm font-bold text-blue">88%</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-muted">Quiz Average</span>
-                                    <span class="text-sm font-bold text-pink">91%</span>
-                                </div>
-                            </div>
-
-                            <!-- Achievement Badge -->
-                            <div class="mt-6 p-4 rounded-lg bg-gradient-to-r from-accent-success/10 to-blue/10 border border-accent-success/20">
-                                <div class="flex items-center gap-3">
-                                    <div class="text-2xl">🏆</div>
-                                    <div>
-                                        <p class="font-medium text-sm">Week's Top Performer!</p>
-                                        <p class="text-xs text-muted">Highest engagement score</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Quick Actions</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="grid grid-cols-2 gap-3">
-                                <button class="btn btn-outline flex flex-col items-center gap-2 p-4 h-auto">
-                                    <span class="text-2xl">📚</span>
-                                    <span class="text-xs">Study Plan</span>
-                                </button>
-                                <button class="btn btn-outline flex flex-col items-center gap-2 p-4 h-auto">
-                                    <span class="text-2xl">📝</span>
-                                    <span class="text-xs">Submit Work</span>
-                                </button>
-                                <button class="btn btn-outline flex flex-col items-center gap-2 p-4 h-auto">
-                                    <span class="text-2xl">💬</span>
-                                    <span class="text-xs">Ask Question</span>
-                                </button>
-                                <button class="btn btn-outline flex flex-col items-center gap-2 p-4 h-auto">
-                                    <span class="text-2xl">📊</span>
-                                    <span class="text-xs">View Grades</span>
-                                </button>
-                            </div>
+                        <div id="modal-content">
+                            <!-- Content will be populated dynamically -->
                         </div>
                     </div>
                 </div>
@@ -400,6 +253,6 @@
     <script src="../components/footer.js"></script>
     
     <!-- Student Dashboard Script -->
-    <script src="../Scripts/student-dashboard.js"></script>
+    <script src="../Scripts/student-dashboard-new.js"></script>
 </body>
 </html>

@@ -40,11 +40,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('Firebase ready, initializing login page...');
     
-    // Check if user is already logged in
-    if (window.authManager) {
+    // Only check if user is already logged in if we're not coming from a redirect
+    // This prevents infinite redirect loops
+    const urlParams = new URLSearchParams(window.location.search);
+    const isRedirected = urlParams.get('redirect') || document.referrer.includes('student-dashboard');
+    
+    if (!isRedirected && window.authManager) {
         try {
             await window.authManager.waitForAuthState();
             if (window.authManager.isAuthenticated()) {
+                console.log('User already authenticated, redirecting to dashboard...');
                 window.location.href = '/pages/student-dashboard.html';
                 return;
             }

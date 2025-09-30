@@ -17,6 +17,9 @@
     import('./firebase-service.js').then(module => {
         window.firebaseService = module.default;
         console.log('✅ Firebase service loaded for real data');
+    }).catch(error => {
+        console.error('❌ Failed to load Firebase service:', error);
+        // Continue without Firebase service - will fall back to demo data
     });
 
     let isInitialized = false;
@@ -278,6 +281,244 @@
         }, 2000);
     }
 
+    // Main initialization function
+    async function initializeStudentDashboard() {
+        console.log('🚀 Initializing Student Dashboard...');
+        
+        try {
+            // Wait for Firebase to be ready
+            await waitForFirebase();
+            console.log('✅ Firebase ready');
+            
+            // Initialize analytics engines
+            await initializeAnalyticsEngines();
+            console.log('✅ Analytics engines ready');
+            
+            // Check authentication and load user data
+            if (!window.authManager) {
+                console.error('❌ AuthManager not available');
+                return;
+            }
+            
+            await window.authManager.waitForAuthState();
+            const user = window.authManager.getCurrentUser();
+            
+            if (!user) {
+                console.log('❌ No authenticated user');
+                window.location.href = '/pages/login.html';
+                return;
+            }
+            
+            console.log('✅ User authenticated:', user.email);
+            
+            // Update user info in UI
+            updateUserInfo(user);
+            
+            // Load and process student data from Firestore
+            await loadAndProcessStudentData(user);
+            console.log('✅ Student data loaded:', studentData);
+            
+            // Render all dashboard components with real data
+            await renderDashboardWithRealData();
+            console.log('✅ Dashboard rendered with real data');
+            
+            // Setup real-time updates
+            initializeRealTimeUpdates();
+            console.log('✅ Real-time updates initialized');
+            
+        } catch (error) {
+            console.error('❌ Dashboard initialization failed:', error);
+        }
+    }
+
+    // Render dashboard with real student data
+    async function renderDashboardWithRealData() {
+        if (!studentData) {
+            console.warn('⚠️ No student data available');
+            return;
+        }
+        
+        // Update quick stats
+        updateQuickStats(studentData);
+        
+        // Render engagement charts
+        renderEngagementCharts(studentData);
+        
+        // Update recent activities
+        updateRecentActivities(studentData);
+        
+        // Render analytics
+        await renderAdvancedStats();
+        
+        // Update progress indicators
+        updateProgressIndicators(studentData);
+    }
+
+    // Update quick stats with real data
+    function updateQuickStats(data) {
+        const { activities = [], profile } = data;
+        
+        // Calculate real metrics
+        const totalActivities = activities.length;
+        const avgScore = activities.length > 0 ? 
+            (activities.reduce((sum, a) => sum + (a.score || 0), 0) / activities.length).toFixed(1) : '0.0';
+        const completionRate = activities.length > 0 ? 
+            Math.round((activities.filter(a => a.score >= 7).length / activities.length) * 100) : 0;
+        
+        // Update DOM elements
+        const statsElements = {
+            'total-activities': totalActivities,
+            'avg-score': avgScore,
+            'completion-rate': completionRate + '%',
+            'current-gpa': profile?.gpa || '0.0'
+        };
+        
+        Object.entries(statsElements).forEach(([id, value]) => {
+            const element = document.getElementById(id) || document.querySelector(`[data-stat="${id}"]`);
+            if (element) {
+                element.textContent = value;
+                console.log(`Updated ${id}:`, value);
+            }
+        });
+    }
+
+    // Render engagement charts with real data
+    function renderEngagementCharts(data) {
+        const { activities = [] } = data;
+        
+        if (activities.length === 0) {
+            console.warn('No activities to chart');
+            return;
+        }
+        
+        // Group activities by type for pie chart
+        const activityTypes = {};
+        activities.forEach(activity => {
+            const type = activity.type || 'unknown';
+            activityTypes[type] = (activityTypes[type] || 0) + 1;
+        });
+        
+        // Update activity breakdown
+        const breakdownContainer = document.getElementById('activity-breakdown');
+        if (breakdownContainer) {
+            const total = activities.length;
+            breakdownContainer.innerHTML = Object.entries(activityTypes)
+                .map(([type, count]) => {
+                    const percentage = Math.round((count / total) * 100);
+                    return `
+                        <div class="flex justify-between items-center py-2">
+                            <span class="capitalize">${type.replace('_', ' ')}</span>
+                            <div class="flex items-center gap-2">
+                                <div class="w-20 h-2 bg-gray-200 rounded-full">
+                                    <div class="h-full bg-blue-500 rounded-full" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="text-sm text-gray-600">${count}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+        
+        // Performance trend (last 10 activities)
+        const trendsContainer = document.getElementById('performance-trends');
+        if (trendsContainer && activities.length > 0) {
+            const recentActivities = activities.slice(0, 10);
+            const scores = recentActivities.map(a => a.score || 0);
+            const avgTrend = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+            
+            trendsContainer.innerHTML = `
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">${avgTrend.toFixed(1)}</div>
+                    <div class="text-sm text-gray-600">Avg Recent Score</div>
+                    <div class="text-xs text-gray-500 mt-1">Based on last ${recentActivities.length} activities</div>
+                </div>
+            `;
+        }
+    }
+
+    // Update recent activities list
+    function updateRecentActivities(data) {
+        const { activities = [] } = data;
+        const recentActivitiesContainer = document.getElementById('recent-activities') || 
+                                        document.querySelector('.recent-activities');
+        
+        if (!recentActivitiesContainer) {
+            console.warn('Recent activities container not found');
+            return;
+        }
+        
+        if (activities.length === 0) {
+            recentActivitiesContainer.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <div class="text-4xl mb-2">📚</div>
+                    <p>No activities found</p>
+                    <p class="text-sm">Start engaging with your courses to see activity data here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const recentList = activities.slice(0, 5);
+        recentActivitiesContainer.innerHTML = recentList.map(activity => {
+            const formattedDate = activity.timestamp ? 
+                new Date(activity.timestamp).toLocaleDateString() : 'Unknown date';
+            const scoreClass = (activity.score || 0) >= 7 ? 'text-green-600' : 'text-yellow-600';
+            
+            return `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                    <div class="flex-1">
+                        <div class="font-medium">${activity.title || 'Activity'}</div>
+                        <div class="text-sm text-gray-600">${activity.course || 'Unknown Course'}</div>
+                        <div class="text-xs text-gray-500">${formattedDate}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold ${scoreClass}">
+                            ${activity.score || 0}/${activity.maxScore || 10}
+                        </div>
+                        <div class="text-xs text-gray-500">${activity.type?.replace('_', ' ') || 'activity'}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        console.log(`✅ Updated recent activities: ${recentList.length} items`);
+    }
+
+    // Update progress indicators
+    function updateProgressIndicators(data) {
+        const { activities = [], profile } = data;
+        
+        if (activities.length === 0) return;
+        
+        // Calculate weekly progress
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        
+        const weeklyActivities = activities.filter(activity => 
+            new Date(activity.timestamp) > oneWeekAgo
+        );
+        
+        const weeklyProgress = Math.min((weeklyActivities.length / 5) * 100, 100); // Goal: 5 activities per week
+        
+        // Update progress bars
+        const progressBars = document.querySelectorAll('.progress-bar, [data-progress]');
+        progressBars.forEach(bar => {
+            const progress = bar.dataset.progress || weeklyProgress;
+            bar.style.width = `${progress}%`;
+        });
+        
+        // Update specific progress elements
+        const weeklyProgressElement = document.getElementById('weekly-progress');
+        if (weeklyProgressElement) {
+            weeklyProgressElement.textContent = `${Math.round(weeklyProgress)}%`;
+        }
+        
+        const weeklyActivitiesElement = document.getElementById('weekly-activities');
+        if (weeklyActivitiesElement) {
+            weeklyActivitiesElement.textContent = weeklyActivities.length;
+        }
+    }
+
     // Initialize everything when DOM is loaded
     document.addEventListener('DOMContentLoaded', initializeStudentDashboard);
 
@@ -427,35 +668,84 @@
 
     async function loadStudentActivitiesFromFirebase(uid) {
         try {
-            if (!window.db) return { activities: [] };
+            if (!window.firebaseService) {
+                console.warn('Firebase service not available, using demo data');
+                return generateSampleStudentData({ uid, email: 'demo@example.com' });
+            }
             
-            // Query for student profile
-            const studentRef = doc(window.db, 'students', uid);
-            const studentSnap = await getDoc(studentRef);
+            console.log('🔄 Loading real student data for user:', uid);
             
-            // Query for activities
-            const activitiesQuery = query(
-                collection(window.db, 'student_engagement'),
-                where('studentId', '==', uid),
-                orderBy('timestamp', 'desc'),
-                limit(100)
+            // Get current user info
+            const currentUser = window.authManager.getCurrentUser();
+            const userEmail = currentUser?.email;
+            
+            console.log('📧 User email:', userEmail);
+            
+            // Find student in Firestore by email
+            const [allStudents, allActivities] = await Promise.all([
+                window.firebaseService.getAllStudents(),
+                window.firebaseService.getAllActivities()
+            ]);
+            
+            // Find the student record matching the logged-in user's email
+            const studentRecord = allStudents.find(student => 
+                student.email.toLowerCase() === userEmail?.toLowerCase()
             );
             
-            const activitiesSnap = await getDocs(activitiesQuery);
-            const activities = [];
+            if (!studentRecord) {
+                console.warn('⚠️ No student record found for email:', userEmail);
+                console.log('Available students:', allStudents.map(s => s.email));
+                return generateSampleStudentData({ uid, email: userEmail });
+            }
             
-            activitiesSnap.forEach(doc => {
-                activities.push({ id: doc.id, ...doc.data() });
-            });
+            console.log('✅ Found student record:', studentRecord.fullName);
+            
+            // Filter activities for this specific student
+            const studentActivities = allActivities.filter(activity => 
+                activity.studentId === studentRecord.id
+            );
+            
+            console.log(`📊 Found ${studentActivities.length} activities for student`);
+            
+            // Convert Firestore data to dashboard format
+            const formattedActivities = studentActivities.map(activity => ({
+                id: activity.id,
+                studentId: activity.studentId,
+                type: activity.activityType,
+                timestamp: activity.timestamp?.toDate ? activity.timestamp.toDate() : new Date(activity.timestamp),
+                quality: activity.quality || 75,
+                score: activity.score || 5,
+                maxScore: activity.maxScore || 10,
+                duration: activity.duration || 60,
+                course: activity.courseName || 'Unknown Course',
+                title: activity.title || activity.description || 'Activity',
+                engagementLevel: activity.engagementLevel || 5,
+                submittedEarly: activity.status === 'completed',
+                isLate: activity.status === 'late',
+                feedback: activity.feedback
+            }));
             
             return {
-                profile: studentSnap.exists() ? studentSnap.data() : null,
-                activities
+                profile: {
+                    name: studentRecord.fullName || studentRecord.firstName + ' ' + studentRecord.lastName,
+                    email: studentRecord.email,
+                    studentId: studentRecord.studentId || studentRecord.id,
+                    major: studentRecord.major || 'Unknown Major',
+                    year: studentRecord.year || 1,
+                    gpa: studentRecord.gpa || '0.0'
+                },
+                activities: formattedActivities.sort((a, b) => b.timestamp - a.timestamp)
             };
             
         } catch (error) {
-            console.error('Firebase query error:', error);
-            return { activities: [] };
+            console.error('❌ Firebase query error:', error);
+            // Fallback to demo data on error
+            const currentUser = window.authManager.getCurrentUser();
+            return generateSampleStudentData({ 
+                uid, 
+                email: currentUser?.email || 'demo@example.com',
+                displayName: currentUser?.displayName || 'Demo User'
+            });
         }
     }
 
@@ -1196,75 +1486,120 @@
     }
 
     function loadStudentData() {
-        if (authChecked) {
-            console.log('Auth already checked, skipping...');
-            return;
-        }
-
-        // Wait for Firebase to be ready, then check auth
-        function checkAuth() {
-            if (window.authManager) {
-                window.authManager.waitForAuthState().then(user => {
-                    authChecked = true;
-                    if (user) {
-                        console.log('Authenticated user found:', user.email);
-                        updateUserInfo(user);
-                    } else {
-                        // No user - redirect to login
-                        console.warn('No authenticated user, redirecting');
-                        window.location.href = '/pages/login.html';
-                    }
-                }).catch(error => {
-                    console.error('Auth check failed:', error);
-                    window.location.href = '/pages/login.html';
-                });
-            } else {
-                // Check again in a moment if auth manager isn't ready
-                setTimeout(checkAuth, 200);
-            }
-        }
-        
-        checkAuth();
+        console.log('🔄 Legacy loadStudentData called - redirecting to main initialization');
+        // This function is kept for compatibility but now just calls the main initialization
+        initializeStudentDashboard();
     }
 
     function updateUserInfo(user) {
-        // Update student name from Firebase Auth
+        console.log('🔄 Updating user info for:', user.email);
+        
+        // Update student name - use real student data if available, otherwise Firebase Auth
         const studentNameElement = document.getElementById('student-name');
-        if (studentNameElement && user.displayName) {
-            studentNameElement.textContent = user.displayName;
+        const displayName = studentData?.profile?.name || user.displayName || 'Student';
+        if (studentNameElement) {
+            studentNameElement.textContent = displayName;
         }
 
         // Update avatar with user initials
         const avatarElement = document.querySelector('.w-12.h-12.rounded-full');
-        if (avatarElement && user.displayName) {
-            const initials = getInitials(user.displayName);
+        if (avatarElement) {
+            const initials = getInitials(displayName);
             avatarElement.textContent = initials;
         }
 
-        // Generate student ID based on user info (could be stored in Firestore)
+        // Update student ID - use real data if available
         const studentIdElement = document.querySelector('p.text-xs.text-muted');
-        if (studentIdElement && user.uid) {
-            // Generate a formatted student ID from user UID
-            const studentId = `ST${user.uid.substring(0, 7).toUpperCase()}`;
+        if (studentIdElement) {
+            const studentId = studentData?.profile?.studentId || `ST${user.uid.substring(0, 7).toUpperCase()}`;
             studentIdElement.textContent = `Student ID: ${studentId}`;
         }
 
-        // Get additional user data from Firestore if available
-        if (window.authManager.getUserProfile) {
-            window.authManager.getUserProfile(user.uid).then(profile => {
-                if (profile) {
-                    console.log('User profile loaded:', profile);
-                    // You can update additional fields here based on Firestore data
-                }
-            });
+        // Update additional profile fields if available
+        if (studentData?.profile) {
+            const profile = studentData.profile;
+            
+            // Update major/course
+            const majorElement = document.getElementById('student-major');
+            if (majorElement && profile.major) {
+                majorElement.textContent = profile.major;
+            }
+            
+            // Update year
+            const yearElement = document.getElementById('student-year');
+            if (yearElement && profile.year) {
+                yearElement.textContent = `Year ${profile.year}`;
+            }
+            
+            // Update GPA
+            const gpaElement = document.getElementById('student-gpa');
+            if (gpaElement && profile.gpa) {
+                gpaElement.textContent = `GPA: ${profile.gpa}`;
+            }
+            
+            console.log('✅ Updated UI with real student profile:', profile);
         }
 
-        console.log('User data loaded from Firebase:', {
+        console.log('✅ User info updated:', {
             uid: user.uid,
-            name: user.displayName,
+            name: displayName,
             email: user.email,
-            emailVerified: user.emailVerified
+            hasRealProfile: !!studentData?.profile
         });
+    }
+
+    // Helper function to get initials from name
+    function getInitials(name) {
+        if (!name) return '??';
+        return name.split(' ')
+            .map(word => word.charAt(0))
+            .join('')
+            .substring(0, 2)
+            .toUpperCase();
+    }
+
+    // Initialize real-time updates
+    function initializeRealTimeUpdates() {
+        console.log('🔄 Setting up real-time updates...');
+        
+        // Refresh data every 5 minutes
+        setInterval(async () => {
+            const user = window.authManager?.getCurrentUser();
+            if (user && studentData) {
+                console.log('🔄 Refreshing student data...');
+                try {
+                    await loadAndProcessStudentData(user);
+                    updateQuickStats(studentData);
+                    renderEngagementCharts(studentData);
+                    updateRecentActivities(studentData);
+                    updateProgressIndicators(studentData);
+                    console.log('✅ Data refreshed successfully');
+                } catch (error) {
+                    console.error('❌ Error refreshing data:', error);
+                }
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+        
+        // Track user activity for engagement metrics
+        let lastActivity = Date.now();
+        
+        ['click', 'scroll', 'keypress'].forEach(eventType => {
+            document.addEventListener(eventType, () => {
+                lastActivity = Date.now();
+            });
+        });
+        
+        // Check if user is active and update engagement
+        setInterval(() => {
+            const now = Date.now();
+            const isActive = (now - lastActivity) < 30000; // Active within 30 seconds
+            
+            if (isActive && currentUser) {
+                console.log('📊 User actively engaged');
+            }
+        }, 60000); // Check every minute
+        
+        console.log('✅ Real-time updates initialized');
     }
 
     function updateUserInfoFallback() {
