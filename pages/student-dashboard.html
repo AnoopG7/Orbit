@@ -201,6 +201,37 @@
           </div>
         </div>
 
+        <!-- Activity Visualization Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <!-- Activity Trends Chart -->
+          <div class="card">
+            <div class="card-body">
+              <h3
+                class="text-lg font-semibold text-text mb-4 flex items-center gap-2"
+              >
+                📊 Activity Trends
+              </h3>
+              <div class="relative" style="height: 300px">
+                <canvas id="activityTrendsChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Distribution -->
+          <div class="card">
+            <div class="card-body">
+              <h3
+                class="text-lg font-semibold text-text mb-4 flex items-center gap-2"
+              >
+                🎯 Performance Distribution
+              </h3>
+              <div class="relative" style="height: 300px">
+                <canvas id="performanceChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Detailed Activity Sections -->
         <div class="space-y-8 mb-8">
           <!-- Recent Activity Timeline -->
@@ -236,36 +267,6 @@
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Activity Visualization Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <!-- Activity Trends Chart -->
-          <div class="card">
-            <div class="card-body">
-              <h3
-                class="text-lg font-semibold text-text mb-4 flex items-center gap-2"
-              >
-                📊 Activity Trends
-              </h3>
-              <div class="relative" style="height: 300px">
-                <canvas id="activityTrendsChart"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Performance Distribution -->
-          <div class="card">
-            <div class="card-body">
-              <h3
-                class="text-lg font-semibold text-text mb-4 flex items-center gap-2"
-              >
-                🎯 Performance Distribution
-              </h3>
-              <div class="relative" style="height: 300px">
-                <canvas id="performanceChart"></canvas>
               </div>
             </div>
           </div>
@@ -609,6 +610,6 @@
     <script src="../components/footer.js"></script>
 
     <!-- Student Dashboard Script -->
-    <script src="../Scripts/student-dashboard-new.js"></script>
+    <script src="../Scripts/student-dashboard.js"></script>
   </body>
 </html>

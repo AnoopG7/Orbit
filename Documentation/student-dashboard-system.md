@@ -110,7 +110,7 @@ The Student Dashboard has been completely redesigned to provide comprehensive ac
 - **Chart Containers**: Canvas elements for Chart.js visualizations
 - **Modal System**: Overlay modal for activity details
 
-### JavaScript Logic (`Scripts/student-dashboard-new.js`)
+### JavaScript Logic (`Scripts/student-dashboard.js`)
 - **Firebase Integration**: Complete Firestore integration with real-time data
 - **Authentication Handling**: Proper auth state management with loading states
 - **Activity Categorization**: Dynamic mapping of activity types to 5 categories
