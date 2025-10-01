@@ -560,50 +560,7 @@
       </div>
     </div>
 
-    <!-- Authentication Guard -->
-    <script>
-      // Authentication guard - redirect to login if not authenticated
-      document.addEventListener("DOMContentLoaded", async () => {
-        console.log("🔐 Checking authentication for student dashboard...");
 
-        // Wait for Firebase to load
-        let attempts = 0;
-        const maxAttempts = 50;
-
-        while (!window.authManager && attempts < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          attempts++;
-        }
-
-        if (!window.authManager) {
-          console.warn("⚠️ AuthManager not loaded, redirecting to login");
-          window.location.href = "/pages/login.html";
-          return;
-        }
-
-        try {
-          // Wait for auth state to be determined
-          await window.authManager.waitForAuthState();
-
-          if (!window.authManager.isAuthenticated()) {
-            console.log("❌ User not authenticated, redirecting to login");
-            window.location.href = "/pages/login.html";
-            return;
-          }
-
-          console.log("✅ User authenticated, loading student dashboard");
-
-          // Hide loading overlay
-          const loadingOverlay = document.getElementById("auth-loading");
-          if (loadingOverlay) {
-            loadingOverlay.style.display = "none";
-          }
-        } catch (error) {
-          console.error("🚨 Authentication check failed:", error);
-          window.location.href = "/pages/login.html";
-        }
-      });
-    </script>
 
     <!-- Component Scripts -->
     <script src="../components/navbar.js"></script>

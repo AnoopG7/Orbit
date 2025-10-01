@@ -19,8 +19,61 @@ let studentActivities = {
     quizzes: []
 };
 
-document.addEventListener('DOMContentLoaded', function() {
+/**
+ * Authentication Guard - Check authentication before initializing dashboard
+ */
+async function checkAuthentication() {
+    console.log('🔐 Checking authentication for student dashboard...');
+
+    // Wait for Firebase to load
+    let attempts = 0;
+    const maxAttempts = 50;
+
+    while (!window.authManager && attempts < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        attempts++;
+    }
+
+    if (!window.authManager) {
+        console.warn('⚠️ AuthManager not loaded, redirecting to login');
+        window.location.href = '/pages/login.html';
+        return false;
+    }
+
+    try {
+        // Wait for auth state to be determined
+        await window.authManager.waitForAuthState();
+
+        if (!window.authManager.isAuthenticated()) {
+            console.log('❌ User not authenticated, redirecting to login');
+            window.location.href = '/pages/login.html';
+            return false;
+        }
+
+        console.log('✅ User authenticated, loading student dashboard');
+
+        // Hide loading overlay
+        const loadingOverlay = document.getElementById('auth-loading');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
+
+        return true;
+    } catch (error) {
+        console.error('🚨 Authentication check failed:', error);
+        window.location.href = '/pages/login.html';
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('📚 Student Activity Dashboard loading...');
+    
+    // Check authentication first
+    const isAuthenticated = await checkAuthentication();
+    if (!isAuthenticated) {
+        return; // Stop initialization if not authenticated
+    }
     
     // Ensure modal is hidden on page load
     const modal = document.getElementById('activity-details-modal');
@@ -30,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Modal hidden on page load');
     }
     
-    // Initialize dashboard immediately since auth is already verified
+    // Initialize dashboard after authentication is verified
     initializeStudentDashboard();
 });
 
@@ -529,15 +582,9 @@ function displayActivityTimeline() {
             timelineHTML += createTimelineActivityItem(activity, timeAgo);
         });
     }
-    
 
+    activityEmoji = '�';
 
-
-
-                    activityEmoji = '�';
-
-
-    
     // Update activity count
     const activityCountElement = document.getElementById('activityCount');
     if (activityCountElement) {
