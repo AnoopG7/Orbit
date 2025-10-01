@@ -196,49 +196,87 @@ class FirebaseDataPopulator {
         // Generate more activities for the specific user (anupthegreat007@gmail.com)
         const specificStudent = this.students.find(s => s.email === 'anupthegreat007@gmail.com');
         
-        // Generate 50 activities for the specific user across all categories
-        for (let i = 0; i < 50; i++) {
-            const course = this.courses[Math.floor(Math.random() * this.courses.length)];
-            const activityType = allActivityTypes[Math.floor(Math.random() * allActivityTypes.length)];
+        // Generate activities for the specific user with realistic random distribution
+        const categoriesArray = Object.keys(activityCategories);
+        
+        // Define target ranges for each category (keeping good existing counts)
+        const categoryTargets = {
+            'Assignment Uploads': Math.floor(Math.random() * 6) + 15, // 15-20 (already has 19, so keep high)
+            'Event Participation': Math.floor(Math.random() * 6) + 15, // 15-20 (keep existing good count)
+            'Class Participation': Math.floor(Math.random() * 11) + 10, // 10-20 (needs more)
+            'Peer Collaboration': Math.floor(Math.random() * 11) + 10, // 10-20 (needs more) 
+            'Quiz Performance': Math.floor(Math.random() * 6) + 15 // 15-20 (keep existing good count)
+        };
+        
+        let activityId = 1;
+        let totalActivities = 0;
+        
+        console.log('🎯 Target activities per category:', categoryTargets);
+        
+        // Generate activities for each category with random distribution
+        categoriesArray.forEach((category, categoryIndex) => {
+            const categoryTypes = activityCategories[category];
+            const numActivities = categoryTargets[category];
+            totalActivities += numActivities;
             
-            // Determine category for this activity type
-            let category = 'Class Participation'; // default
-            for (const [cat, types] of Object.entries(activityCategories)) {
-                if (types.includes(activityType)) {
-                    category = cat;
-                    break;
-                }
+            for (let i = 0; i < numActivities; i++) {
+                const course = this.courses[Math.floor(Math.random() * this.courses.length)];
+                // Ensure we use different activity types within the same category for variety
+                const activityType = categoryTypes[Math.floor(Math.random() * categoryTypes.length)];
+                
+                // Create better date distribution across last 21 days (3 weeks)
+                const dayOffset = Math.floor(Math.random() * 21); // Random day in last 3 weeks
+                const baseDate = new Date();
+                baseDate.setDate(baseDate.getDate() - dayOffset);
+                
+                // Add some random hours within the day for variety
+                const randomHour = Math.floor(Math.random() * 16) + 8; // 8 AM to 11 PM
+                const randomMinute = Math.floor(Math.random() * 60);
+                baseDate.setHours(randomHour, randomMinute, 0, 0);
+                
+                const activity = {
+                    id: `activity_${activityId.toString().padStart(4, '0')}`,
+                    studentId: specificStudent.id,
+                    studentName: specificStudent.fullName,
+                    studentEmail: specificStudent.email,
+                    courseId: course.id,
+                    courseName: course.courseName,
+                    teacherId: course.teacherId,
+                    activityType: activityType,
+                    category: category,
+                    title: this.generateActivityTitle(activityType, course.courseName),
+                    description: this.generateActivityDescription(activityType),
+                    date: baseDate.toISOString(),
+                    timestamp: baseDate.toISOString(), // Keep both for compatibility
+                    submissionTime: new Date(baseDate.getTime() - Math.random() * 2 * 60 * 60 * 1000).toISOString(), // Within 2 hours before
+                    score: Math.floor(Math.random() * 8) + 3, // 3-10
+                    maxScore: 10,
+                    quality: Math.floor(Math.random() * 30) + 70, // 70-100 (higher for specific user)
+                    duration: Math.floor(Math.random() * 120) + 15, // 15-135 minutes
+                    difficulty: Math.random() * 4 + 2, // 2-6
+                    engagementLevel: Math.random() * 5 + 6, // 6-11 (higher engagement)
+                    feedback: this.generateFeedback(),
+                    status: Math.random() > 0.05 ? 'completed' : 'pending', // 95% completed
+                    createdAt: serverTimestamp()
+                };
+                
+                this.activities.push(activity);
+                activityId++;
             }
-            
-            const activity = {
-                id: `activity_${(i + 1).toString().padStart(4, '0')}`,
-                studentId: specificStudent.id,
-                studentName: specificStudent.fullName,
-                studentEmail: specificStudent.email,
-                courseId: course.id,
-                courseName: course.courseName,
-                teacherId: course.teacherId,
-                activityType: activityType,
-                category: category,
-                title: this.generateActivityTitle(activityType, course.courseName),
-                description: this.generateActivityDescription(activityType),
-                timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Last 30 days
-                submissionTime: new Date(Date.now() - Math.random() * 25 * 24 * 60 * 60 * 1000), // Last 25 days
-                score: Math.floor(Math.random() * 8) + 3, // 3-10
-                maxScore: 10,
-                quality: Math.floor(Math.random() * 30) + 70, // 70-100 (higher for specific user)
-                duration: Math.floor(Math.random() * 120) + 15, // 15-135 minutes
-                difficulty: Math.random() * 4 + 2, // 2-6
-                engagementLevel: Math.random() * 5 + 6, // 6-11 (higher engagement)
-                feedback: this.generateFeedback(),
-                status: Math.random() > 0.05 ? 'completed' : 'pending', // 95% completed
-                createdAt: serverTimestamp()
-            };
-            
-            this.activities.push(activity);
-        }
+        });
+        
+        console.log(`✅ Generated ${totalActivities} activities for specific user with realistic distribution:`);
+        
+        // Count actual activities per category for verification
+        const actualCounts = {};
+        this.activities.forEach(activity => {
+            if (activity.studentEmail === 'anupthegreat007@gmail.com') {
+                actualCounts[activity.category] = (actualCounts[activity.category] || 0) + 1;
+            }
+        });
+        console.log('📊 Actual distribution:', actualCounts);
 
-        // Generate 300+ activities for all other students (15+ per student on average)
+        // Generate 300+ activities for all other students (15+ per student on average)  
         for (let i = 51; i < 400; i++) {
             const student = this.students[Math.floor(Math.random() * this.students.length)];
             const course = this.courses[Math.floor(Math.random() * this.courses.length)];
@@ -265,8 +303,10 @@ class FirebaseDataPopulator {
                 category: category,
                 title: this.generateActivityTitle(activityType, course.courseName),
                 description: this.generateActivityDescription(activityType),
-                timestamp: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000), // Last 60 days
-                submissionTime: new Date(Date.now() - Math.random() * 45 * 24 * 60 * 60 * 1000), // Last 45 days
+                // Better date distribution for other students too
+                date: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000).toISOString(), // Last 60 days
+                timestamp: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000).toISOString(), // Last 60 days
+                submissionTime: new Date(Date.now() - Math.random() * 45 * 24 * 60 * 60 * 1000).toISOString(), // Last 45 days
                 score: Math.floor(Math.random() * 8) + 3, // 3-10
                 maxScore: 10,
                 quality: Math.floor(Math.random() * 40) + 60, // 60-100

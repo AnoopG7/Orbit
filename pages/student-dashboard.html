@@ -274,24 +274,22 @@
         <!-- Activity Details Modal -->
         <div
           id="activity-details-modal"
-          class="fixed inset-0 hidden z-50 flex items-center justify-center p-4"
-          style="display: none; background-color: rgba(0, 0, 0, 0.75)"
+          class="modal-backdrop hidden"
+          style="display: none;"
           onclick="hideActivityDetails()"
         >
           <div
-            class="bg-surface rounded-lg shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col"
+            class="modal activity-modal"
             onclick="event.stopPropagation()"
           >
             <!-- Modal Header -->
-            <div
-              class="flex items-center justify-between p-6 border-b border-border-primary"
-            >
-              <h2 id="modal-title" class="text-xl font-bold text-text">
+            <div class="modal-header">
+              <h2 id="modal-title" class="modal-title">
                 Activity Details
               </h2>
               <button
                 onclick="hideActivityDetails()"
-                class="text-muted hover:text-text transition-colors p-1 rounded hover:bg-gray-100"
+                class="modal-close"
               >
                 <svg
                   class="w-6 h-6"
@@ -311,13 +309,12 @@
             <!-- Modal Content (Scrollable) -->
             <div
               id="modal-content"
-              class="flex-1 overflow-y-auto p-6"
-              style="scrollbar-width: thin"
+              class="modal-body"
             >
               <!-- Content will be populated dynamically -->
             </div>
             <!-- Modal Footer -->
-            <div class="flex justify-end p-6 border-t border-border-primary">
+            <div class="modal-footer">
               <button
                 onclick="hideActivityDetails()"
                 class="btn bg-gray-200 text-gray-700 px-4 py-2"

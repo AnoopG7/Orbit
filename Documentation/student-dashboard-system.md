@@ -120,8 +120,12 @@ The Student Dashboard has been completely redesigned to provide comprehensive ac
 ### Data Population (`Scripts/populate-firebase-data.js`)
 - **Consistent Data**: Ensures anupthegreat007@gmail.com has comprehensive activity data
 - **Category Mapping**: Maps old activity types to new 5-category system
-- **Enhanced User Data**: Special user gets 50 activities across all categories
+- **Smart Distribution**: Generates 70-100 activities with realistic random distribution (10-20 per category)
 - **Realistic Scoring**: Higher quality scores and engagement for primary user
+- **Natural Date Patterns**: Activities spread across 21-day periods for authentic usage patterns
+- **ISO Date Format**: All dates in consistent ISO format for proper JavaScript parsing
+- **Collaboration Data**: Ensures all activity types including peer collaboration are properly represented
+- **Flexible Counts**: Maintains higher activity counts for categories that already perform well
 
 ## Configuration
 
@@ -164,10 +168,13 @@ The Student Dashboard has been completely redesigned to provide comprehensive ac
 ## Testing
 
 ### Test User: anupthegreat007@gmail.com
-- **50 Activities**: Comprehensive data across all 5 categories
+- **70-100 Activities**: Realistically distributed across all 5 categories (10-20 per category)
+- **Smart Distribution**: Higher counts for Assignment Uploads, Events, and Quizzes (15-20 each)
+- **Balanced Categories**: Class Participation and Peer Collaboration (10-20 each)
 - **High Engagement**: Enhanced engagement levels (6-11 range)
 - **Quality Scores**: Higher quality scores (70-100 range)
-- **Recent Activity**: Activities within last 30 days for relevance
+- **Natural Date Distribution**: Activities spread across last 21 days for realistic patterns
+- **Proper ISO Dates**: All timestamps in ISO format for consistent parsing
 
 ### Data Validation
 - All activities have proper category mappings

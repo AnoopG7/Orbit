@@ -818,39 +818,68 @@
 }
 
 /* === STUDENT DASHBOARD SPECIFIC STYLES === */
-/* Custom scrollbar for modal content */
-#modal-content::-webkit-scrollbar {
-    width: 8px;
-}
-
-#modal-content::-webkit-scrollbar-track {
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-    margin: 4px;
-}
-
-#modal-content::-webkit-scrollbar-thumb {
-    background: var(--border-secondary);
-    border-radius: 4px;
-    border: 1px solid var(--bg-surface);
-}
-
-#modal-content::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
-}
-
 /* Smooth scroll behavior for timeline and modal */
 #activity-timeline {
     scroll-behavior: smooth;
     position: relative;
 }
 
-#modal-content {
+.modal-body {
     scroll-behavior: smooth;
 }
 
-/* Modal backdrop blur effect */
-#activity-details-modal {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+/* Activity Modal Specific Styling */
+.activity-modal {
+    width: 800px;
+    height: 600px;
+    max-width: 90vw;
+    max-height: 90vh;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive modal sizing */
+@media (max-width: 768px) {
+    .activity-modal {
+        width: 95vw;
+        height: 80vh;
+        min-height: 300px;
+    }
+}
+
+.activity-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* Allows flexbox to shrink */
+}
+
+/* Enhanced modal backdrop */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Improved scrollbar for activity modal */
+.activity-modal .modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.activity-modal .modal-body::-webkit-scrollbar-track {
+    background: var(--bg-card);
+    border-radius: 4px;
+}
+
+.activity-modal .modal-body::-webkit-scrollbar-thumb {
+    background-color: var(--border-primary);
+    border-radius: 4px;
+    border: 2px solid var(--bg-card);
+}
+
+.activity-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-muted);
 }
