@@ -220,10 +220,12 @@ interface Activity {
   id: string;                    // Unique identifier (activity_XXXX format)
   studentId: string;             // Reference to student
   studentName: string;           // Student's display name
+  studentEmail: string;          // Student's email for matching (NEW)
   courseId: string;              // Reference to course
   courseName: string;            // Course display name
   teacherId: string;             // Reference to teacher
   activityType: ActivityType;    // Type of engagement activity
+  category: ActivityCategory;    // NEW: Dashboard category (1 of 5)
   title: string;                 // Activity title/name
   description: string;           // Detailed description
   timestamp: Date;               // Activity occurrence time
@@ -250,6 +252,13 @@ type ActivityType =
   | 'project_upload'
   | 'code_review'
   | 'presentation';
+
+type ActivityCategory = 
+  | 'Assignment Uploads'      // assignment_submission, project_upload, code_review
+  | 'Event Participation'     // presentation, lecture_attendance, question_asking
+  | 'Class Participation'     // discussion_participation, peer_collaboration
+  | 'Peer Collaboration'      // peer_collaboration, code_review, discussion_participation
+  | 'Quiz Performance';       // quiz_completion, resource_access
 ```
 
 #### Sample Data
@@ -257,11 +266,13 @@ type ActivityType =
 {
   "id": "activity_0001",
   "studentId": "student_001",
-  "studentName": "Alice Johnson",
+  "studentName": "Anoop Gupta",
+  "studentEmail": "anupthegreat007@gmail.com",
   "courseId": "course_02",
   "courseName": "Data Structures & Algorithms",
   "teacherId": "teacher_01",
   "activityType": "assignment_submission",
+  "category": "Assignment Uploads",
   "title": "Data Structures & Algorithms Assignment #3",
   "description": "Completed and submitted assignment with detailed solutions",
   "timestamp": "2024-09-25T14:30:00.000Z",
@@ -326,6 +337,53 @@ interface SystemStats {
 
 ---
 
+## Activity Categorization System (New)
+
+### Purpose
+The Activity Categorization System organizes all student activities into 5 key performance areas for comprehensive tracking in the Student Dashboard.
+
+### Category Mappings
+| Category | Activity Types | Description | Dashboard Color |
+|----------|----------------|-------------|-----------------|
+| **Assignment Uploads** | `assignment_submission`, `project_upload`, `code_review` | Academic submissions and code reviews | Blue gradient |
+| **Event Participation** | `presentation`, `lecture_attendance`, `question_asking` | Active participation in events and lectures | Green gradient |
+| **Class Participation** | `discussion_participation`, `peer_collaboration` | Engagement in class discussions and group work | Purple gradient |
+| **Peer Collaboration** | `peer_collaboration`, `code_review`, `discussion_participation` | Collaboration-focused activities with classmates | Orange gradient |
+| **Quiz Performance** | `quiz_completion`, `resource_access` | Assessment performance and resource utilization | Pink gradient |
+
+### Implementation Details
+- **Dynamic Mapping**: Activity types automatically map to categories in the dashboard
+- **Cross-Category Activities**: Some activity types (like `peer_collaboration`) appear in multiple categories
+- **Prioritized User**: `anupthegreat007@gmail.com` has enhanced data across all 5 categories
+- **Real-time Updates**: Dashboard updates immediately when new activities are added
+
+### Query Examples
+```javascript
+// Get all Assignment Upload activities for specific student
+db.activities.find({ 
+  studentEmail: "anupthegreat007@gmail.com",
+  category: "Assignment Uploads" 
+});
+
+// Count activities by category for dashboard
+db.activities.aggregate([
+  { $match: { studentEmail: "anupthegreat007@gmail.com" }},
+  { $group: { _id: "$category", count: { $sum: 1 }}}
+]);
+
+// Get engagement trends by category
+db.activities.aggregate([
+  { $match: { studentEmail: "anupthegreat007@gmail.com" }},
+  { $group: { 
+    _id: "$category",
+    avgEngagement: { $avg: "$engagementLevel" },
+    avgScore: { $avg: "$score" }
+  }}
+]);
+```
+
+---
+
 ## Data Relationships
 
 ### Primary Relationships
@@ -367,11 +425,15 @@ db.courses.createIndex({ "department": 1 });
 
 // Activities Collection (Most Important)
 db.activities.createIndex({ "studentId": 1 });
+db.activities.createIndex({ "studentEmail": 1 });        // NEW: Email-based queries
 db.activities.createIndex({ "courseId": 1 });
 db.activities.createIndex({ "timestamp": -1 });
 db.activities.createIndex({ "activityType": 1 });
+db.activities.createIndex({ "category": 1 });            // NEW: Category-based queries
 db.activities.createIndex({ "engagementLevel": -1 });
 db.activities.createIndex({ "studentId": 1, "timestamp": -1 });
+db.activities.createIndex({ "studentEmail": 1, "category": 1 }); // NEW: Dashboard queries
+db.activities.createIndex({ "studentEmail": 1, "timestamp": -1 }); // NEW: Timeline queries
 ```
 
 ---
@@ -382,10 +444,21 @@ db.activities.createIndex({ "studentId": 1, "timestamp": -1 });
 
 #### Student Performance Analytics
 ```javascript
-// Get student's recent activities
+// Get student's recent activities by email (NEW)
 db.activities.find({ 
-  studentId: "student_001" 
+  studentEmail: "anupthegreat007@gmail.com" 
 }).sort({ timestamp: -1 }).limit(20);
+
+// Calculate performance by category for specific student (NEW)
+db.activities.aggregate([
+  { $match: { studentEmail: "anupthegreat007@gmail.com" }},
+  { $group: { 
+    _id: "$category",
+    avgEngagement: { $avg: "$engagementLevel" },
+    avgScore: { $avg: "$score" },
+    totalActivities: { $sum: 1 }
+  }}
+]);
 
 // Calculate average engagement by student
 db.activities.aggregate([
@@ -393,6 +466,18 @@ db.activities.aggregate([
     _id: "$studentId", 
     avgEngagement: { $avg: "$engagementLevel" },
     totalActivities: { $sum: 1 }
+  }}
+]);
+
+// Dashboard summary for specific student (NEW)
+db.activities.aggregate([
+  { $match: { studentEmail: "anupthegreat007@gmail.com" }},
+  { $group: {
+    _id: null,
+    totalActivities: { $sum: 1 },
+    avgEngagement: { $avg: "$engagementLevel" },
+    avgScore: { $avg: "$score" },
+    categories: { $addToSet: "$category" }
   }}
 ]);
 ```

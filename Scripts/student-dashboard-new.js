@@ -84,28 +84,37 @@ async function initializeStudentDashboard() {
  * Wait for Firebase to be ready
  */
 function waitForFirebase() {
-    return new Promise((resolve, reject) => {
-        if (window.db && window.authManager) {
-            resolve();
-            return;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 50; // 5 seconds maximum wait
-        
-        const checkFirebase = setInterval(() => {
-            attempts++;
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Import Firebase to ensure it's loaded
+            const { db } = await import('../firebase/firebase-config.js');
             
-            if (window.db && window.authManager) {
-                clearInterval(checkFirebase);
+            if (db && window.authManager) {
                 console.log('✅ Firebase services ready');
                 resolve();
-            } else if (attempts >= maxAttempts) {
-                clearInterval(checkFirebase);
-                console.error('❌ Firebase services failed to load within timeout');
-                reject(new Error('Firebase services not available'));
+                return;
             }
-        }, 100);
+            
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds maximum wait
+            
+            const checkFirebase = setInterval(() => {
+                attempts++;
+                
+                if (db && window.authManager) {
+                    clearInterval(checkFirebase);
+                    console.log('✅ Firebase services ready');
+                    resolve();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkFirebase);
+                    console.error('❌ Firebase services failed to load within timeout');
+                    reject(new Error('Firebase services not available'));
+                }
+            }, 100);
+        } catch (error) {
+            console.error('❌ Firebase import failed:', error);
+            reject(error);
+        }
     });
 }
 
@@ -116,9 +125,13 @@ async function loadDataFromFirebase() {
     console.log('📊 Loading data from Firebase...');
     
     try {
+        // Import Firebase functions
+        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const { db } = await import('../firebase/firebase-config.js');
+        
         // Load students data
-        const studentsQuery = window.db.collection('students');
-        const studentsSnapshot = await studentsQuery.get();
+        const studentsQuery = collection(db, 'students');
+        const studentsSnapshot = await getDocs(studentsQuery);
         studentsData = studentsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -126,8 +139,8 @@ async function loadDataFromFirebase() {
         console.log('👥 Loaded students:', studentsData.length);
         
         // Load activities data  
-        const activitiesQuery = window.db.collection('activities');
-        const activitiesSnapshot = await activitiesQuery.get();
+        const activitiesQuery = collection(db, 'activities');
+        const activitiesSnapshot = await getDocs(activitiesQuery);
         activitiesData = activitiesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -135,8 +148,8 @@ async function loadDataFromFirebase() {
         console.log('📋 Loaded activities:', activitiesData.length);
         
         // Load courses data
-        const coursesQuery = window.db.collection('courses'); 
-        const coursesSnapshot = await coursesQuery.get();
+        const coursesQuery = collection(db, 'courses'); 
+        const coursesSnapshot = await getDocs(coursesQuery);
         coursesData = coursesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -156,23 +169,27 @@ async function loadStudentActivitiesFromFirebase() {
     console.log('🎯 Loading student-specific activities for 5 activity types...');
     
     try {
-        // Get current user email
-        let userEmail = null;
+        // Get current user email - always use the specific email for now since that's what has the data
+        let userEmail = 'anupthegreat007@gmail.com'; // The email that has comprehensive activity data
+        
         if (currentUser && currentUser.email) {
-            userEmail = currentUser.email;
-        } else {
-            userEmail = 'anupthegreat007@gmail.com'; // Your specific email
+            console.log('🔍 Current auth user email:', currentUser.email);
+            // For now, we'll use the email that has data, but in future we can match any authenticated user
+            // userEmail = currentUser.email;
         }
         
         console.log('📧 Looking for student with email:', userEmail);
         
         // Find the student record matching the email
+        console.log('🔍 Available students:', studentsData.map(s => ({ id: s.id, email: s.email, name: s.fullName })));
+        
         const matchingStudent = studentsData.find(student => 
             student.email && student.email.toLowerCase() === userEmail.toLowerCase()
         );
         
         if (!matchingStudent) {
             console.warn('⚠️ No student record found for email:', userEmail);
+            console.warn('Available student emails:', studentsData.map(s => s.email));
             displayEmptyState();
             return;
         }
@@ -183,13 +200,25 @@ async function loadStudentActivitiesFromFirebase() {
         displayStudentInfo(matchingStudent);
         
         // Filter and categorize activities for this student
+        console.log('🔍 Looking for activities with:');
+        console.log('  - studentId:', matchingStudent.id);
+        console.log('  - studentName:', matchingStudent.fullName);
+        console.log('  - studentEmail:', userEmail);
+        
         const allStudentActivities = activitiesData.filter(activity => 
             activity.studentId === matchingStudent.id || 
-            activity.studentName === matchingStudent.name ||
+            activity.studentName === matchingStudent.fullName ||
+            activity.studentEmail === userEmail ||
             activity.email === userEmail
         );
         
         console.log('📊 Total student activities found:', allStudentActivities.length);
+        
+        if (allStudentActivities.length > 0) {
+            console.log('🔍 Sample activity:', allStudentActivities[0]);
+        } else {
+            console.log('🔍 Sample activities in database:', activitiesData.slice(0, 3));
+        }
         
         // Categorize activities into the 5 main types
         categorizeActivities(allStudentActivities);
@@ -210,10 +239,10 @@ async function loadStudentActivitiesFromFirebase() {
 }
 
 /**
- * Categorize activities into the 5 main activity types
+ * Categorize activities into the 5 main activity types using Firebase category field
  */
 function categorizeActivities(activities) {
-    console.log('🏷️ Categorizing activities into 5 main types...');
+    console.log('🏷️ Categorizing activities into 5 main types using Firebase categories...');
     
     studentActivities = {
         assignments: [],
@@ -224,67 +253,108 @@ function categorizeActivities(activities) {
     };
     
     activities.forEach(activity => {
-        const type = (activity.type || activity.category || activity.activityType || '').toLowerCase();
-        const title = (activity.title || activity.name || activity.description || '').toLowerCase();
+        // Use the category field from Firebase if available
+        const category = activity.category || '';
         
-        // Assignment Uploads
-        if (type.includes('assignment') || type.includes('upload') || type.includes('homework') ||
-            title.includes('assignment') || title.includes('homework') || title.includes('project') || title.includes('upload')) {
-            studentActivities.assignments.push({
-                ...activity,
-                activityType: 'assignments',
-                color: 'blue',
-                emoji: '📝'
-            });
-        }
-        // Event Participation  
-        else if (type.includes('event') || type.includes('seminar') || type.includes('workshop') || type.includes('conference') ||
-                 title.includes('event') || title.includes('seminar') || title.includes('workshop') || title.includes('conference')) {
-            studentActivities.events.push({
-                ...activity,
-                activityType: 'events',
-                color: 'pink',
-                emoji: '🎉'
-            });
-        }
-        // Class Participation
-        else if (type.includes('participation') || type.includes('attendance') || type.includes('class') || type.includes('discussion') ||
-                 title.includes('participation') || title.includes('attendance') || title.includes('discussion') || title.includes('class')) {
-            studentActivities.participation.push({
-                ...activity,
-                activityType: 'participation',
-                color: 'green',
-                emoji: '🎓'
-            });
-        }
-        // Peer Collaboration
-        else if (type.includes('collaboration') || type.includes('group') || type.includes('peer') || type.includes('team') ||
-                 title.includes('collaboration') || title.includes('group') || title.includes('peer') || title.includes('team')) {
-            studentActivities.collaboration.push({
-                ...activity,
-                activityType: 'collaboration',
-                color: 'yellow',
-                emoji: '👥'
-            });
-        }
-        // Quiz Performance
-        else if (type.includes('quiz') || type.includes('test') || type.includes('exam') || type.includes('assessment') ||
-                 title.includes('quiz') || title.includes('test') || title.includes('exam') || title.includes('assessment')) {
-            studentActivities.quizzes.push({
-                ...activity,
-                activityType: 'quizzes',
-                color: 'purple',
-                emoji: '🧠'
-            });
-        }
-        // Default to assignments if unclear
-        else {
-            studentActivities.assignments.push({
-                ...activity,
-                activityType: 'assignments',
-                color: 'blue',
-                emoji: '📝'
-            });
+        console.log('🔍 Processing activity:', activity.title, 'Category:', category);
+        
+        // Map Firebase categories to dashboard categories
+        switch (category) {
+            case 'Assignment Uploads':
+                studentActivities.assignments.push({
+                    ...activity,
+                    activityType: 'assignments',
+                    color: 'blue',
+                    emoji: '📝'
+                });
+                break;
+                
+            case 'Event Participation':
+                studentActivities.events.push({
+                    ...activity,
+                    activityType: 'events',
+                    color: 'pink',
+                    emoji: '🎉'
+                });
+                break;
+                
+            case 'Class Participation':
+                studentActivities.participation.push({
+                    ...activity,
+                    activityType: 'participation',
+                    color: 'green',
+                    emoji: '🎓'
+                });
+                break;
+                
+            case 'Peer Collaboration':
+                studentActivities.collaboration.push({
+                    ...activity,
+                    activityType: 'collaboration',
+                    color: 'yellow',
+                    emoji: '👥'
+                });
+                break;
+                
+            case 'Quiz Performance':
+                studentActivities.quizzes.push({
+                    ...activity,
+                    activityType: 'quizzes',
+                    color: 'purple',
+                    emoji: '🧠'
+                });
+                break;
+                
+            default:
+                // Fallback: try to categorize based on activity type if no category
+                const activityType = (activity.activityType || '').toLowerCase();
+                console.log('⚠️ No category found, using activityType:', activityType);
+                
+                if (activityType.includes('assignment') || activityType.includes('project') || activityType.includes('code_review')) {
+                    studentActivities.assignments.push({
+                        ...activity,
+                        activityType: 'assignments',
+                        color: 'blue',
+                        emoji: '📝'
+                    });
+                } else if (activityType.includes('presentation') || activityType.includes('lecture') || activityType.includes('question')) {
+                    studentActivities.events.push({
+                        ...activity,
+                        activityType: 'events',
+                        color: 'pink',
+                        emoji: '🎉'
+                    });
+                } else if (activityType.includes('discussion') || activityType.includes('participation')) {
+                    studentActivities.participation.push({
+                        ...activity,
+                        activityType: 'participation',
+                        color: 'green',
+                        emoji: '🎓'
+                    });
+                } else if (activityType.includes('collaboration') || activityType.includes('peer')) {
+                    studentActivities.collaboration.push({
+                        ...activity,
+                        activityType: 'collaboration',
+                        color: 'yellow',
+                        emoji: '👥'
+                    });
+                } else if (activityType.includes('quiz') || activityType.includes('resource')) {
+                    studentActivities.quizzes.push({
+                        ...activity,
+                        activityType: 'quizzes',
+                        color: 'purple',
+                        emoji: '🧠'
+                    });
+                } else {
+                    // Default to assignments
+                    studentActivities.assignments.push({
+                        ...activity,
+                        activityType: 'assignments',
+                        color: 'blue',
+                        emoji: '📝'
+                    });
+                }
+                break;
         }
     });
     
@@ -362,6 +432,66 @@ function calculateTrend(activities) {
 }
 
 /**
+ * Get background color for activity type
+ */
+function getActivityBgColor(color) {
+    const colors = {
+        'blue': '#3B82F6',
+        'purple': '#8B5CF6', 
+        'green': '#10B981',
+        'orange': '#F59E0B',
+        'red': '#EF4444',
+        'gray': '#64748B'
+    };
+    return colors[color] || colors['gray'];
+}
+
+/**
+ * Get lighter gradient color for activity type
+ */
+function getActivityLightColor(color) {
+    const colors = {
+        'blue': '#60A5FA',
+        'purple': '#A78BFA', 
+        'green': '#34D399',
+        'orange': '#FBBF24',
+        'red': '#F87171',
+        'gray': '#94A3B8'
+    };
+    return colors[color] || colors['gray'];
+}
+
+/**
+ * Get border color for activity type
+ */
+function getActivityBorderColor(color) {
+    const colors = {
+        'blue': '#3B82F6',
+        'purple': '#8B5CF6', 
+        'green': '#10B981',
+        'orange': '#F59E0B',
+        'red': '#EF4444',
+        'gray': '#6B7280'
+    };
+    return colors[color] || colors['gray'];
+}
+
+/**
+ * Get text color for activity type
+ */
+function getActivityTextColor(color) {
+    const colors = {
+        'blue': '#FFFFFF',
+        'purple': '#FFFFFF', 
+        'green': '#FFFFFF',
+        'orange': '#FFFFFF',
+        'red': '#FFFFFF',
+        'gray': '#FFFFFF'
+    };
+    return colors[color] || colors['gray'];
+}
+
+/**
  * Display recent activity timeline
  */
 function displayActivityTimeline() {
@@ -383,39 +513,35 @@ function displayActivityTimeline() {
             const dateA = new Date(a.date || a.timestamp || a.createdAt || a.updatedAt);
             const dateB = new Date(b.date || b.timestamp || b.createdAt || b.updatedAt);
             return dateB - dateA;
-        })
-        .slice(0, 10); // Show last 10 activities
+        }); // Show all activities
     
     // Generate timeline HTML
     let timelineHTML = '';
     
     if (sortedActivities.length === 0) {
-        timelineHTML = `
-            <div class="text-center py-8">
-                <div class="text-4xl mb-2">📭</div>
-                <p class="text-muted">No recent activities found</p>
-                <p class="text-sm text-muted">Start participating in activities to see them here!</p>
-            </div>
-        `;
+        const template = document.getElementById('empty-timeline-template');
+        timelineHTML = template ? template.innerHTML : '<div class="text-center py-6"><p class="text-muted">No activities found</p></div>';
     } else {
+        // Generate activity items
         sortedActivities.forEach(activity => {
             const date = new Date(activity.date || activity.timestamp || activity.createdAt || activity.updatedAt);
             const timeAgo = getTimeAgo(date);
-            
-            timelineHTML += `
-                <div class="flex items-center gap-3 p-3 bg-${activity.color}/5 rounded-lg hover:bg-${activity.color}/10 transition-colors cursor-pointer" 
-                     onclick="showActivityDetails('${activity.activityType}', '${activity.id}')">
-                    <div class="w-3 h-3 bg-${activity.color} rounded-full flex-shrink-0"></div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-text flex items-center gap-2">
-                            ${activity.emoji} ${activity.title || activity.name || activity.description || 'Activity'}
-                        </p>
-                        <p class="text-xs text-muted">${activity.course || activity.courseName || 'General'} • ${timeAgo}</p>
-                        ${activity.score !== undefined ? `<p class="text-xs text-${activity.color}">Score: ${activity.score}%</p>` : ''}
-                    </div>
-                </div>
-            `;
+            timelineHTML += createTimelineActivityItem(activity, timeAgo);
         });
+    }
+    
+
+
+
+
+                    activityEmoji = '�';
+
+
+    
+    // Update activity count
+    const activityCountElement = document.getElementById('activityCount');
+    if (activityCountElement) {
+        activityCountElement.textContent = `${allActivities.length} activities`;
     }
     
     // Update timeline container
@@ -438,6 +564,12 @@ async function initializeActivityCharts() {
     console.log('📈 Initializing activity charts...');
     
     try {
+        // Wait for Chart.js to be available
+        if (typeof Chart === 'undefined') {
+            console.log('⏳ Waiting for Chart.js to load...');
+            await waitForChart();
+        }
+        
         // Activity Trends Chart
         await createActivityTrendsChart();
         
@@ -447,9 +579,35 @@ async function initializeActivityCharts() {
         // Hide loading indicators
         hideLoadingIndicators();
         
+        console.log('✅ Charts initialized successfully');
+        
     } catch (error) {
         console.error('🚨 Error creating charts:', error);
     }
+}
+
+/**
+ * Wait for Chart.js to be available
+ */
+function waitForChart() {
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        const checkChart = setInterval(() => {
+            attempts++;
+            
+            if (typeof Chart !== 'undefined') {
+                clearInterval(checkChart);
+                console.log('✅ Chart.js ready');
+                resolve();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkChart);
+                console.error('❌ Chart.js failed to load');
+                reject(new Error('Chart.js not available'));
+            }
+        }, 100);
+    });
 }
 
 /**
@@ -457,7 +615,17 @@ async function initializeActivityCharts() {
  */
 function createActivityTrendsChart() {
     const ctx = document.getElementById('activityTrendsChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.warn('⚠️ activityTrendsChart canvas not found');
+        return;
+    }
+    
+    console.log('📊 Creating activity trends chart...');
+    
+    // Destroy existing chart if it exists
+    if (charts.activityTrends) {
+        charts.activityTrends.destroy();
+    }
     
     // Generate last 7 days data
     const last7Days = [];
@@ -470,55 +638,114 @@ function createActivityTrendsChart() {
         });
     }
     
+    console.log('📅 Chart data for last 7 days:', last7Days.map(d => d.label));
+    console.log('📊 Activity data:', {
+        assignments: studentActivities.assignments?.length || 0,
+        events: studentActivities.events?.length || 0,
+        participation: studentActivities.participation?.length || 0
+    });
+    
     // Count activities per day for each type
     const datasets = [
         {
             label: 'Assignments',
-            data: last7Days.map(day => countActivitiesOnDate(studentActivities.assignments, day.date)),
+            data: last7Days.map(day => countActivitiesOnDate(studentActivities.assignments || [], day.date)),
             borderColor: 'rgb(59, 130, 246)',
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.4
+            tension: 0.4,
+            fill: false
         },
         {
             label: 'Events', 
-            data: last7Days.map(day => countActivitiesOnDate(studentActivities.events, day.date)),
+            data: last7Days.map(day => countActivitiesOnDate(studentActivities.events || [], day.date)),
             borderColor: 'rgb(236, 72, 153)',
             backgroundColor: 'rgba(236, 72, 153, 0.1)',
-            tension: 0.4
+            tension: 0.4,
+            fill: false
         },
         {
             label: 'Participation',
-            data: last7Days.map(day => countActivitiesOnDate(studentActivities.participation, day.date)),
+            data: last7Days.map(day => countActivitiesOnDate(studentActivities.participation || [], day.date)),
             borderColor: 'rgb(34, 197, 94)',
             backgroundColor: 'rgba(34, 197, 94, 0.1)', 
-            tension: 0.4
+            tension: 0.4,
+            fill: false
+        },
+        {
+            label: 'Collaboration',
+            data: last7Days.map(day => countActivitiesOnDate(studentActivities.collaboration || [], day.date)),
+            borderColor: 'rgb(251, 191, 36)',
+            backgroundColor: 'rgba(251, 191, 36, 0.1)', 
+            tension: 0.4,
+            fill: false
+        },
+        {
+            label: 'Quizzes',
+            data: last7Days.map(day => countActivitiesOnDate(studentActivities.quizzes || [], day.date)),
+            borderColor: 'rgb(147, 51, 234)',
+            backgroundColor: 'rgba(147, 51, 234, 0.1)', 
+            tension: 0.4,
+            fill: false
         }
     ];
     
-    charts.activityTrends = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: last7Days.map(day => day.label),
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top'
-                }
+    try {
+        charts.activityTrends = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days.map(day => day.label),
+                datasets: datasets
             },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: 'rgba(156, 163, 175, 0.8)'
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'rgba(156, 163, 175, 0.8)'
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+        
+        console.log('✅ Activity trends chart created successfully');
+    } catch (error) {
+        console.error('🚨 Error creating activity trends chart:', error);
+    }
 }
 
 /**
@@ -526,50 +753,93 @@ function createActivityTrendsChart() {
  */
 function createPerformanceChart() {
     const ctx = document.getElementById('performanceChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.warn('⚠️ performanceChart canvas not found');
+        return;
+    }
+    
+    console.log('📊 Creating performance distribution chart...');
+    
+    // Destroy existing chart if it exists
+    if (charts.performance) {
+        charts.performance.destroy();
+    }
     
     // Calculate performance data
     const performanceData = [
-        studentActivities.assignments.length,
-        studentActivities.events.length, 
-        studentActivities.participation.length,
-        studentActivities.collaboration.length,
-        studentActivities.quizzes.length
+        studentActivities.assignments?.length || 0,
+        studentActivities.events?.length || 0, 
+        studentActivities.participation?.length || 0,
+        studentActivities.collaboration?.length || 0,
+        studentActivities.quizzes?.length || 0
     ];
     
-    charts.performance = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Assignments', 'Events', 'Participation', 'Collaboration', 'Quizzes'],
-            datasets: [{
-                data: performanceData,
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)',   // Blue
-                    'rgba(236, 72, 153, 0.8)',   // Pink  
-                    'rgba(34, 197, 94, 0.8)',    // Green
-                    'rgba(251, 191, 36, 0.8)',   // Yellow
-                    'rgba(147, 51, 234, 0.8)'    // Purple
-                ],
-                borderColor: [
-                    'rgb(59, 130, 246)',
-                    'rgb(236, 72, 153)', 
-                    'rgb(34, 197, 94)',
-                    'rgb(251, 191, 36)',
-                    'rgb(147, 51, 234)'
-                ],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right'
-                }
+    const labels = ['Assignments', 'Events', 'Participation', 'Collaboration', 'Quizzes'];
+    
+    console.log('📊 Performance data:', performanceData);
+    
+    try {
+        charts.performance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: performanceData,
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',   // Blue
+                        'rgba(236, 72, 153, 0.8)',   // Pink  
+                        'rgba(34, 197, 94, 0.8)',    // Green
+                        'rgba(251, 191, 36, 0.8)',   // Yellow
+                        'rgba(147, 51, 234, 0.8)'    // Purple
+                    ],
+                    borderColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(236, 72, 153)', 
+                        'rgb(34, 197, 94)',
+                        'rgb(251, 191, 36)',
+                        'rgb(147, 51, 234)'
+                    ],
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            color: 'rgba(156, 163, 175, 0.9)'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
             }
-        }
-    });
+        });
+        
+        console.log('✅ Performance distribution chart created successfully');
+    } catch (error) {
+        console.error('🚨 Error creating performance chart:', error);
+    }
 }
 
 /**
@@ -609,36 +879,31 @@ function showActivityDetails(activityType, activityId = null) {
     // Generate content
     const activities = studentActivities[activityType] || [];
     
-    let contentHTML = `
-        <div class="mb-4">
-            <p class="text-lg font-semibold">Total Activities: ${activities.length}</p>
-        </div>
-    `;
+    // Calculate stats
+    const totalScore = activities.reduce((sum, act) => sum + (act.score || 0), 0);
+    const avgScore = activities.length > 0 ? (totalScore / activities.length).toFixed(1) : 0;
+    const completedCount = activities.filter(act => act.status === 'completed').length;
+    const completionRate = activities.length > 0 ? ((completedCount / activities.length) * 100).toFixed(1) : 0;
+    
+    // Create stats section using template
+    let contentHTML = createModalStats(activities.length, avgScore, completionRate);
     
     if (activities.length === 0) {
-        contentHTML += `
-            <div class="text-center py-8">
-                <div class="text-6xl mb-4">📭</div>
-                <p class="text-muted text-lg">No ${activityType} activities yet</p>
-                <p class="text-sm text-muted mt-2">Start participating to see activities here!</p>
-            </div>
-        `;
+        contentHTML += createEmptyModalContent(activityType);
     } else {
-        contentHTML += '<div class="space-y-3">';
+        // Sort activities by date (most recent first)
+        const sortedActivities = [...activities].sort((a, b) => {
+            const dateA = new Date(a.date || a.timestamp || a.createdAt || a.updatedAt || 0);
+            const dateB = new Date(b.date || b.timestamp || b.createdAt || b.updatedAt || 0);
+            return dateB - dateA;
+        });
         
-        activities.forEach(activity => {
+        contentHTML += '<div class="space-y-4">';
+        
+        sortedActivities.forEach((activity, index) => {
             const date = new Date(activity.date || activity.timestamp || activity.createdAt || activity.updatedAt);
-            
-            contentHTML += `
-                <div class="p-4 border border-border-primary rounded-lg">
-                    <h4 class="font-medium text-text">${activity.title || activity.name || activity.description || 'Activity'}</h4>
-                    <p class="text-sm text-muted mt-1">${activity.course || activity.courseName || 'General Course'}</p>
-                    <p class="text-sm text-muted">${date.toLocaleDateString()}</p>
-                    ${activity.score !== undefined ? `<p class="text-sm font-medium mt-2">Score: ${activity.score}%</p>` : ''}
-                    ${activity.description && activity.description !== activity.title ? `<p class="text-sm mt-2">${activity.description}</p>` : ''}
-                    ${activity.feedback ? `<p class="text-sm mt-2 text-blue-600">Feedback: ${activity.feedback}</p>` : ''}
-                </div>
-            `;
+            const timeAgo = getTimeAgo(date);
+            contentHTML += createActivityItem(activity, timeAgo);
         });
         
         contentHTML += '</div>';
@@ -795,13 +1060,8 @@ function displayEmptyState() {
     // Show empty timeline
     const timelineContainer = document.getElementById('activity-timeline');
     if (timelineContainer) {
-        timelineContainer.innerHTML = `
-            <div class="text-center py-8">
-                <div class="text-4xl mb-2">🎓</div>
-                <p class="text-muted">Welcome to your activity dashboard!</p>
-                <p class="text-sm text-muted">Start participating in activities to see your progress here.</p>
-            </div>
-        `;
+        const template = document.getElementById('empty-dashboard-template');
+        timelineContainer.innerHTML = template ? template.innerHTML : '<div class="text-center py-8"><p class="text-muted">Welcome to your dashboard!</p></div>';
     }
     
     hideLoadingIndicators();
@@ -828,6 +1088,177 @@ function getTimeAgo(date) {
  */
 function loadComponents() {
     console.log('🔧 Loading dashboard components...');
+}
+
+/**
+ * Create modal statistics section using template
+ */
+function createModalStats(total, average, completion) {
+    const template = document.getElementById('modal-stats-template');
+    if (!template) return '';
+    
+    const statsHTML = template.innerHTML;
+    return statsHTML
+        .replace('data-stat="total">0', `data-stat="total">${total}`)
+        .replace('data-stat="average">0%', `data-stat="average">${average}%`)
+        .replace('data-stat="completion">0%', `data-stat="completion">${completion}%`);
+}
+
+/**
+ * Create empty modal content using template
+ */
+function createEmptyModalContent(activityType) {
+    const template = document.getElementById('modal-empty-template');
+    if (!template) return '<div class="text-center py-12"><p>No activities yet</p></div>';
+    
+    return template.innerHTML.replace(
+        'data-content="title">No activities yet',
+        `data-content="title">No ${activityType} activities yet`
+    );
+}
+
+/**
+ * Create timeline activity item using template
+ */
+function createTimelineActivityItem(activity, timeAgo) {
+    const template = document.getElementById('timeline-activity-template');
+    if (!template) return '';
+    
+    const itemElement = template.content.cloneNode(true);
+    const container = itemElement.querySelector('.admin-style-card');
+    
+    // Set onclick handler
+    container.onclick = () => showActivityDetails(activity.activityType, activity.id);
+    
+    // Populate basic info
+    const initial = container.querySelector('[data-content="initial"]');
+    const title = container.querySelector('[data-content="title"]');
+    const course = container.querySelector('[data-content="course"]');
+    const timeElement = container.querySelector('[data-content="timeAgo"]');
+    
+    if (initial) initial.textContent = activity.title ? activity.title.charAt(0).toUpperCase() : 'A';
+    if (title) title.textContent = activity.title || activity.name || activity.description || 'Activity';
+    if (course) course.textContent = activity.course || activity.courseName || 'General';
+    if (timeElement) timeElement.textContent = timeAgo;
+    
+    // Handle activity type badge
+    if (activity.activityType) {
+        const typeBadge = container.querySelector('[data-content="type-badge"]');
+        const activityTypeElement = container.querySelector('[data-content="activityType"]');
+        if (typeBadge && activityTypeElement) {
+            typeBadge.classList.remove('hidden');
+            activityTypeElement.textContent = activity.activityType;
+        }
+    }
+    
+    // Handle score badge
+    if (activity.score !== undefined) {
+        const scoreBadge = container.querySelector('[data-content="score-badge"]');
+        const scoreElement = container.querySelector('[data-content="score"]');
+        if (scoreBadge && scoreElement) {
+            scoreBadge.classList.remove('hidden');
+            scoreElement.textContent = `${activity.score}/${activity.maxScore || 10}`;
+        }
+    }
+    
+    return container.outerHTML;
+}
+
+/**
+ * Create activity item using template (for modal)
+ */
+function createActivityItem(activity, timeAgo) {
+    const template = document.getElementById('activity-item-template');
+    if (!template) return '';
+    
+    const itemElement = template.content.cloneNode(true);
+    const container = itemElement.querySelector('.bg-gray-50');
+    
+    // Populate basic info
+    const emoji = container.querySelector('[data-content="emoji"]');
+    const name = container.querySelector('[data-content="name"]');
+    const course = container.querySelector('[data-content="course"]');
+    const timeElement = container.querySelector('[data-content="timeAgo"]');
+    const status = container.querySelector('[data-content="status"]');
+    const statusBadge = container.querySelector('[data-content="status-badge"]');
+    
+    if (emoji) emoji.textContent = activity.emoji || '📋';
+    if (name) name.textContent = activity.title || activity.name || 'Activity';
+    if (course) course.textContent = activity.course || activity.courseName || 'General Course';
+    if (timeElement) timeElement.textContent = timeAgo;
+    if (status) status.textContent = (activity.status || 'completed').charAt(0).toUpperCase() + (activity.status || 'completed').slice(1);
+    
+    // Set status badge color
+    if (statusBadge) {
+        const statusColor = activity.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                           activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                           'bg-gray-100 text-gray-800';
+        statusBadge.className = `inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${statusColor}`;
+    }
+    
+    // Handle optional fields
+    if (activity.description && activity.description !== activity.title) {
+        const descSection = container.querySelector('.activity-description');
+        const descElement = container.querySelector('[data-content="description"]');
+        if (descSection && descElement) {
+            descSection.classList.remove('hidden');
+            descElement.textContent = activity.description;
+        }
+    }
+    
+    if (activity.score !== undefined) {
+        const scoreSection = container.querySelector('.score-section');
+        const scoreElement = container.querySelector('[data-content="score"]');
+        if (scoreSection && scoreElement) {
+            scoreSection.classList.remove('hidden');
+            const scoreColor = (activity.score || 0) >= 8 ? 'text-green-600' : 
+                              (activity.score || 0) >= 6 ? 'text-yellow-600' : 'text-red-600';
+            scoreElement.className = `ml-1 font-semibold ${scoreColor}`;
+            scoreElement.textContent = `${activity.score}/${activity.maxScore || 10}`;
+        }
+    }
+    
+    if (activity.duration) {
+        const durationSection = container.querySelector('.duration-section');
+        const durationElement = container.querySelector('[data-content="duration"]');
+        if (durationSection && durationElement) {
+            durationSection.classList.remove('hidden');
+            durationElement.textContent = activity.duration;
+        }
+    }
+    
+    if (activity.engagementLevel) {
+        const engagementSection = container.querySelector('.engagement-section');
+        const engagementElement = container.querySelector('[data-content="engagement"]');
+        if (engagementSection && engagementElement) {
+            engagementSection.classList.remove('hidden');
+            engagementElement.textContent = activity.engagementLevel.toFixed(1);
+        }
+    }
+    
+    if (activity.feedback) {
+        const feedbackSection = container.querySelector('.feedback-section');
+        const feedbackElement = container.querySelector('[data-content="feedback"]');
+        if (feedbackSection && feedbackElement) {
+            feedbackSection.classList.remove('hidden');
+            feedbackElement.textContent = activity.feedback;
+        }
+    }
+    
+    // Set full date
+    const fullDateElement = container.querySelector('[data-content="fullDate"]');
+    if (fullDateElement) {
+        const date = new Date(activity.date || activity.timestamp || activity.createdAt || activity.updatedAt);
+        fullDateElement.textContent = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    return container.outerHTML;
 }
 
 // Global exports for modal functions

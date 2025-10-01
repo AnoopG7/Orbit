@@ -3,17 +3,17 @@
     "students": [
       {
         "id": "student_001",
-        "firstName": "Alice",
-        "lastName": "Johnson",
-        "fullName": "Alice Johnson",
-        "email": "alice.johnson1@university.edu",
+        "firstName": "Anoop",
+        "lastName": "Gupta",
+        "fullName": "Anoop Gupta",
+        "email": "anupthegreat007@gmail.com",
         "studentId": "STU20240001",
         "major": "Computer Science",
         "year": 3,
-        "gpa": "3.75",
-        "enrollmentDate": "2024-09-15T00:00:00.000Z",
+        "gpa": "3.85",
+        "enrollmentDate": "2024-08-15T00:00:00.000Z",
         "status": "active",
-        "profilePicture": "https://ui-avatars.com/api/?name=Alice+Johnson&background=random&size=150",
+        "profilePicture": "https://ui-avatars.com/api/?name=Anop+Gupta&background=4f46e5&color=ffffff&size=150",
         "preferences": {
           "notifications": true,
           "emailUpdates": true,
@@ -135,11 +135,13 @@
       {
         "id": "activity_0001",
         "studentId": "student_001",
-        "studentName": "Alice Johnson",
+        "studentName": "Anoop Gupta",
+        "studentEmail": "anupthegreat007@gmail.com",
         "courseId": "course_02",
         "courseName": "Data Structures & Algorithms",
         "teacherId": "teacher_01",
         "activityType": "assignment_submission",
+        "category": "Assignment Uploads",
         "title": "Data Structures & Algorithms Assignment #3",
         "description": "Completed and submitted assignment with detailed solutions",
         "timestamp": "2024-09-25T14:30:00.000Z",
@@ -157,11 +159,13 @@
       {
         "id": "activity_0002",
         "studentId": "student_001",
-        "studentName": "Alice Johnson",
+        "studentName": "Anoop Gupta",
+        "studentEmail": "anupthegreat007@gmail.com",
         "courseId": "course_01",
         "courseName": "Introduction to Programming",
         "teacherId": "teacher_01",
         "activityType": "quiz_completion",
+        "category": "Quiz Performance",
         "title": "Introduction to Programming Quiz - Chapter 7",
         "description": "Successfully completed online quiz with multiple choice and short answers",
         "timestamp": "2024-09-24T16:20:00.000Z",
@@ -178,23 +182,73 @@
       },
       {
         "id": "activity_0003",
-        "studentId": "student_002",
-        "studentName": "Bob Smith",
+        "studentId": "student_001",
+        "studentName": "Anoop Gupta",
+        "studentEmail": "anupthegreat007@gmail.com",
         "courseId": "course_01",
         "courseName": "Introduction to Programming",
         "teacherId": "teacher_01",
         "activityType": "discussion_participation",
+        "category": "Class Participation",
         "title": "Discussion Forum - Introduction to Programming",
         "description": "Actively participated in course discussion forum with meaningful contributions",
         "timestamp": "2024-09-23T11:15:00.000Z",
         "submissionTime": "2024-09-23T10:30:00.000Z",
-        "score": 6,
+        "score": 8,
         "maxScore": 10,
-        "quality": 74,
+        "quality": 85,
         "duration": 32,
         "difficulty": 2.8,
-        "engagementLevel": 6.7,
-        "feedback": "Good effort! Room for improvement in some areas.",
+        "engagementLevel": 8.2,
+        "feedback": "Great participation! Very engaged in discussions.",
+        "status": "completed",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      },
+      {
+        "id": "activity_0004",
+        "studentId": "student_001",
+        "studentName": "Anoop Gupta",
+        "studentEmail": "anupthegreat007@gmail.com",
+        "courseId": "course_02",
+        "courseName": "Data Structures & Algorithms",
+        "teacherId": "teacher_01",
+        "activityType": "presentation",
+        "category": "Event Participation",
+        "title": "Student Presentation - Data Structures & Algorithms",
+        "description": "Delivered presentation to class on assigned topic",
+        "timestamp": "2024-09-20T14:00:00.000Z",
+        "submissionTime": "2024-09-20T13:30:00.000Z",
+        "score": 9,
+        "maxScore": 10,
+        "quality": 93,
+        "duration": 75,
+        "difficulty": 4.5,
+        "engagementLevel": 9.5,
+        "feedback": "Impressive work! Shows deep understanding.",
+        "status": "completed",
+        "createdAt": "2024-09-29T10:30:00.000Z"
+      },
+      {
+        "id": "activity_0005",
+        "studentId": "student_001",
+        "studentName": "Anoop Gupta",
+        "studentEmail": "anupthegreat007@gmail.com",
+        "courseId": "course_01",
+        "courseName": "Introduction to Programming",
+        "teacherId": "teacher_01",
+        "activityType": "peer_collaboration",
+        "category": "Peer Collaboration",
+        "title": "Group Project - Introduction to Programming",
+        "description": "Collaborated with classmates on group project and shared resources",
+        "timestamp": "2024-09-18T16:30:00.000Z",
+        "submissionTime": "2024-09-18T15:45:00.000Z",
+        "score": 10,
+        "maxScore": 10,
+        "quality": 95,
+        "duration": 120,
+        "difficulty": 3.8,
+        "engagementLevel": 10.0,
+        "feedback": "Excellent collaboration with peers!",
         "status": "completed",
         "createdAt": "2024-09-29T10:30:00.000Z"
       }
@@ -252,6 +306,22 @@
       "query": "db.activities.find({ activityType: 'assignment_submission' })",
       "description": "Get all assignment submission activities"
     },
+    "get_activities_by_category": {
+      "query": "db.activities.find({ category: 'Assignment Uploads' })",
+      "description": "Get all activities in the Assignment Uploads category"
+    },
+    "get_student_by_email": {
+      "query": "db.students.findOne({ email: 'anupthegreat007@gmail.com' })",
+      "description": "Get student by email address"
+    },
+    "get_activities_for_specific_student": {
+      "query": "db.activities.find({ studentEmail: 'anupthegreat007@gmail.com' })",
+      "description": "Get all activities for anupthegreat007@gmail.com"
+    },
+    "get_activities_by_category_for_student": {
+      "query": "db.activities.find({ studentEmail: 'anupthegreat007@gmail.com', category: 'Quiz Performance' })",
+      "description": "Get Quiz Performance activities for specific student"
+    },
     "get_system_statistics": {
       "query": "db.system.findOne({ _id: 'stats' })",
       "description": "Get current system statistics"
@@ -291,12 +361,53 @@
     ]
   },
 
+  "activity_categorization": {
+    "Assignment Uploads": {
+      "activity_types": ["assignment_submission", "project_upload", "code_review"],
+      "description": "Activities related to submitting assignments, uploading projects, and code reviews",
+      "color_theme": "blue"
+    },
+    "Event Participation": {
+      "activity_types": ["presentation", "lecture_attendance", "question_asking"],
+      "description": "Activities related to participating in events, presentations, and lectures",
+      "color_theme": "green"
+    },
+    "Class Participation": {
+      "activity_types": ["discussion_participation", "peer_collaboration"],
+      "description": "Activities related to participating in class discussions and collaborating with peers",
+      "color_theme": "purple"
+    },
+    "Peer Collaboration": {
+      "activity_types": ["peer_collaboration", "code_review", "discussion_participation"],
+      "description": "Activities specifically focused on working and collaborating with other students",
+      "color_theme": "orange"
+    },
+    "Quiz Performance": {
+      "activity_types": ["quiz_completion", "resource_access"],
+      "description": "Activities related to taking quizzes and accessing learning resources",
+      "color_theme": "pink"
+    }
+  },
+
+  "special_users": {
+    "anupthegreat007@gmail.com": {
+      "student_id": "student_001",
+      "full_name": "Anoop Gupta",
+      "priority_user": true,
+      "enhanced_data": true,
+      "activity_count": 50,
+      "description": "Primary test user with comprehensive activity data across all 5 categories"
+    }
+  },
+
   "metadata": {
     "database_name": "orbit_student_engagement",
     "total_collections": 4,
-    "total_documents": 383,
+    "total_documents": 400,
     "data_generated": "2024-09-29T10:30:00.000Z",
-    "generator_version": "1.0.0",
-    "firebase_project": "orbit-65e7a"
+    "generator_version": "2.0.0",
+    "firebase_project": "orbit-65e7a",
+    "activity_categories": 5,
+    "supports_dynamic_categorization": true
   }
 }

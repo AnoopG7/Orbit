@@ -32,7 +32,33 @@ class FirebaseDataPopulator {
             'Information Technology', 'Cybersecurity', 'Artificial Intelligence'
         ];
 
-        for (let i = 1; i <= 20; i++) {
+        // Add the specific user first
+        const specificUser = {
+            id: 'student_001',
+            firstName: 'Anoop',
+            lastName: 'Gupta',
+            fullName: 'Anoop Gupta',
+            email: 'anupthegreat007@gmail.com',
+            studentId: 'STU20240001',
+            major: 'Computer Science',
+            year: 3,
+            gpa: '3.85',
+            enrollmentDate: new Date(2024, 7, 15), // August 15, 2024
+            status: 'active',
+            profilePicture: 'https://ui-avatars.com/api/?name=Anup+The+Great&background=4f46e5&color=ffffff&size=150',
+            preferences: {
+                notifications: true,
+                emailUpdates: true,
+                darkMode: false
+            },
+            createdAt: serverTimestamp(),
+            lastLoginAt: new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000) // Last 2 days
+        };
+        
+        this.students.push(specificUser);
+
+        // Generate additional students
+        for (let i = 2; i <= 20; i++) {
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
             const major = majors[Math.floor(Math.random() * majors.length)];
@@ -152,26 +178,91 @@ class FirebaseDataPopulator {
 
     // Generate student activity data
     generateActivities() {
-        const activityTypes = [
+        // Map old activity types to new 5 categories
+        const activityCategories = {
+            'Assignment Uploads': ['assignment_submission', 'project_upload', 'code_review'],
+            'Event Participation': ['presentation', 'lecture_attendance', 'question_asking'],
+            'Class Participation': ['discussion_participation', 'peer_collaboration'],
+            'Peer Collaboration': ['peer_collaboration', 'code_review', 'discussion_participation'],
+            'Quiz Performance': ['quiz_completion', 'resource_access']
+        };
+
+        const allActivityTypes = [
             'assignment_submission', 'quiz_completion', 'discussion_participation',
             'lecture_attendance', 'peer_collaboration', 'resource_access',
             'question_asking', 'project_upload', 'code_review', 'presentation'
         ];
 
-        // Generate 300+ activities (15+ per student on average)
-        for (let i = 0; i < 350; i++) {
+        // Generate more activities for the specific user (anupthegreat007@gmail.com)
+        const specificStudent = this.students.find(s => s.email === 'anupthegreat007@gmail.com');
+        
+        // Generate 50 activities for the specific user across all categories
+        for (let i = 0; i < 50; i++) {
+            const course = this.courses[Math.floor(Math.random() * this.courses.length)];
+            const activityType = allActivityTypes[Math.floor(Math.random() * allActivityTypes.length)];
+            
+            // Determine category for this activity type
+            let category = 'Class Participation'; // default
+            for (const [cat, types] of Object.entries(activityCategories)) {
+                if (types.includes(activityType)) {
+                    category = cat;
+                    break;
+                }
+            }
+            
+            const activity = {
+                id: `activity_${(i + 1).toString().padStart(4, '0')}`,
+                studentId: specificStudent.id,
+                studentName: specificStudent.fullName,
+                studentEmail: specificStudent.email,
+                courseId: course.id,
+                courseName: course.courseName,
+                teacherId: course.teacherId,
+                activityType: activityType,
+                category: category,
+                title: this.generateActivityTitle(activityType, course.courseName),
+                description: this.generateActivityDescription(activityType),
+                timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Last 30 days
+                submissionTime: new Date(Date.now() - Math.random() * 25 * 24 * 60 * 60 * 1000), // Last 25 days
+                score: Math.floor(Math.random() * 8) + 3, // 3-10
+                maxScore: 10,
+                quality: Math.floor(Math.random() * 30) + 70, // 70-100 (higher for specific user)
+                duration: Math.floor(Math.random() * 120) + 15, // 15-135 minutes
+                difficulty: Math.random() * 4 + 2, // 2-6
+                engagementLevel: Math.random() * 5 + 6, // 6-11 (higher engagement)
+                feedback: this.generateFeedback(),
+                status: Math.random() > 0.05 ? 'completed' : 'pending', // 95% completed
+                createdAt: serverTimestamp()
+            };
+            
+            this.activities.push(activity);
+        }
+
+        // Generate 300+ activities for all other students (15+ per student on average)
+        for (let i = 51; i < 400; i++) {
             const student = this.students[Math.floor(Math.random() * this.students.length)];
             const course = this.courses[Math.floor(Math.random() * this.courses.length)];
-            const activityType = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+            const activityType = allActivityTypes[Math.floor(Math.random() * allActivityTypes.length)];
+            
+            // Determine category for this activity type
+            let category = 'Class Participation'; // default
+            for (const [cat, types] of Object.entries(activityCategories)) {
+                if (types.includes(activityType)) {
+                    category = cat;
+                    break;
+                }
+            }
             
             const activity = {
                 id: `activity_${(i + 1).toString().padStart(4, '0')}`,
                 studentId: student.id,
                 studentName: student.fullName,
+                studentEmail: student.email,
                 courseId: course.id,
                 courseName: course.courseName,
                 teacherId: course.teacherId,
                 activityType: activityType,
+                category: category,
                 title: this.generateActivityTitle(activityType, course.courseName),
                 description: this.generateActivityDescription(activityType),
                 timestamp: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000), // Last 60 days

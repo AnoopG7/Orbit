@@ -688,6 +688,38 @@
     scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
+/* Timeline specific scrollbar styling */
+#activity-timeline::-webkit-scrollbar {
+    width: 6px;
+}
+
+#activity-timeline::-webkit-scrollbar-track {
+    background: #f8fafc;
+    border-radius: 3px;
+}
+
+#activity-timeline::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+}
+
+#activity-timeline::-webkit-scrollbar-thumb:hover {
+    background: #2563eb;
+}
+
+/* Timeline fade effect */
+.timeline-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9));
+    pointer-events: none;
+}
+
 /* === USER CARD STYLING === */
 .user-card {
     background: var(--bg-tertiary);
@@ -720,4 +752,105 @@
 
 .user-card-admin {
     border-left: 4px solid var(--error-red);
+}
+
+/* === ADMIN STYLE ACTIVITY CARDS === */
+.admin-style-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-primary);
+    transition: all var(--transition-fast);
+}
+
+.admin-style-card:hover {
+    border-color: var(--border-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.admin-avatar {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.admin-name {
+    color: var(--text-primary);
+}
+
+.admin-details {
+    color: var(--text-secondary);
+}
+
+.admin-status {
+    color: var(--text-secondary);
+}
+
+.admin-role-badge {
+    background: var(--accent-pink);
+    color: white;
+}
+
+.admin-score {
+    color: var(--text-primary);
+}
+
+/* Timeline scrollbar theming */
+#activity-timeline {
+    scrollbar-color: var(--border-secondary) var(--bg-tertiary);
+}
+
+#activity-timeline::-webkit-scrollbar {
+    width: 8px;
+}
+
+#activity-timeline::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+#activity-timeline::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: 4px;
+    border: 1px solid var(--bg-surface);
+}
+
+#activity-timeline::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* === STUDENT DASHBOARD SPECIFIC STYLES === */
+/* Custom scrollbar for modal content */
+#modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#modal-content::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    margin: 4px;
+}
+
+#modal-content::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: 4px;
+    border: 1px solid var(--bg-surface);
+}
+
+#modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* Smooth scroll behavior for timeline and modal */
+#activity-timeline {
+    scroll-behavior: smooth;
+    position: relative;
+}
+
+#modal-content {
+    scroll-behavior: smooth;
+}
+
+/* Modal backdrop blur effect */
+#activity-details-modal {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
