@@ -532,11 +532,6 @@ async function loadIntelligentUsersList() {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </button>
-                        <button class="btn btn-ghost btn-sm" onclick="editUser('${user.id}')" title="Edit User">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                            </svg>
-                        </button>
                         <button class="btn btn-ghost btn-sm text-error" onclick="deleteUser('${user.id}')" title="Delete User">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -1501,6 +1496,9 @@ async function showUserDetailsModal(userId) {
     try {
         console.log('🔍 Opening detailed view for user:', userId);
         
+        // Reset original activities for fresh start
+        originalUserActivities = [];
+        
         // Get user data from various sources
         const userData = await getUserCompleteData(userId);
         
@@ -1560,9 +1558,41 @@ async function getUserCompleteData(userId) {
             }
         }
         
-        // Get user activities if student
+        // Get user activities if student - fetch fresh from Firebase
         if (userData && userData.role === 'student') {
-            userData.activities = realFirebaseData.activities?.filter(a => a.studentId === userId) || [];
+            try {
+                // Get fresh activities from Firebase
+                const { collection, query, where, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+                const db = window.db;
+                
+                const activitiesRef = collection(db, 'activities');
+                const q = query(
+                    activitiesRef,
+                    where('studentId', '==', userId),
+                    orderBy('timestamp', 'desc'),
+                    limit(10)
+                );
+                
+                const snapshot = await getDocs(q);
+                const freshActivities = [];
+                
+                snapshot.forEach((doc) => {
+                    const activityData = doc.data();
+                    freshActivities.push({
+                        id: doc.id,
+                        ...activityData,
+                        timestamp: activityData.timestamp?.toDate ? activityData.timestamp.toDate() : new Date(activityData.timestamp)
+                    });
+                });
+                
+                userData.activities = freshActivities;
+                console.log('✅ Loaded fresh activities for user:', freshActivities.length);
+                
+            } catch (error) {
+                console.warn('⚠️ Could not load fresh activities, using cached data:', error);
+                // Fallback to cached data
+                userData.activities = realFirebaseData.activities?.filter(a => a.studentId === userId) || [];
+            }
             
             // Calculate analytics
             userData.analytics = calculateUserAnalytics(userData);
@@ -1621,7 +1651,7 @@ function calculateUserAnalytics(userData) {
         ranking: `#${rank}`,
         trend: parseFloat(avgEngagement) > 7 ? 'Improving' : parseFloat(avgEngagement) > 5 ? 'Stable' : 'Declining',
         activityBreakdown,
-        recentActivities: activities.slice(-10).reverse() // Last 10 activities
+        recentActivities: activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10) // Most recent 10 activities
     };
 }
 
@@ -1775,10 +1805,6 @@ function setupUserDetailsModalEvents(modalClone, userData) {
     // Footer button events
     modalClone.getElementById('export-user-data-btn').addEventListener('click', () => {
         exportUserData(userData);
-    });
-    
-    modalClone.getElementById('edit-user-btn').addEventListener('click', () => {
-        editUserData(userData);
     });
     
     // Activity filter event
@@ -1964,11 +1990,19 @@ function createUserPerformanceChart(userData) {
     });
 }
 
+// Store original activities data for filtering
+let originalUserActivities = [];
+
 function loadUserActivitiesList(userData) {
     const activitiesList = document.getElementById('user-activities-list');
-    if (!activitiesList || !userData.analytics?.recentActivities) return;
+    if (!activitiesList) return;
     
-    const activities = userData.analytics.recentActivities;
+    // Store original data if not already stored
+    if (userData.analytics?.recentActivities && originalUserActivities.length === 0) {
+        originalUserActivities = [...userData.analytics.recentActivities];
+    }
+    
+    const activities = userData.analytics?.recentActivities || [];
     
     if (activities.length === 0) {
         activitiesList.innerHTML = `
@@ -2050,19 +2084,44 @@ function getUserActivityIcon(activityType) {
 
 function filterUserActivities(filterType, userData) {
     const activitiesList = document.getElementById('user-activities-list');
-    if (!activitiesList || !userData.analytics?.recentActivities) return;
+    if (!activitiesList) return;
     
-    let filteredActivities = userData.analytics.recentActivities;
+    // Use original data for filtering, don't modify userData.analytics.recentActivities
+    let filteredActivities = [...originalUserActivities];
     
     if (filterType !== 'all') {
-        filteredActivities = userData.analytics.recentActivities.filter(activity => 
-            activity.activityType === filterType
-        );
+        // Map filter type to activity categories
+        const categoryMap = {
+            'assignment_uploads': ['assignment_submission', 'project_upload'],
+            'quiz_performance': ['quiz_completion'],
+            'class_participation': ['discussion_participation', 'lecture_attendance', 'question_asking'],
+            'peer_collaboration': ['peer_collaboration', 'code_review'],
+            'event_participation': ['presentation', 'resource_access']
+        };
+        
+        if (categoryMap[filterType]) {
+            filteredActivities = originalUserActivities.filter(activity => 
+                categoryMap[filterType].includes(activity.activityType)
+            );
+        } else {
+            // Direct activity type match
+            filteredActivities = originalUserActivities.filter(activity => 
+                activity.activityType === filterType
+            );
+        }
     }
     
+    // Create temporary userData object for display without modifying original
+    const tempUserData = {
+        ...userData,
+        analytics: {
+            ...userData.analytics,
+            recentActivities: filteredActivities
+        }
+    };
+    
     // Re-render with filtered data
-    userData.analytics.recentActivities = filteredActivities;
-    loadUserActivitiesList(userData);
+    loadUserActivitiesList(tempUserData);
 }
 
 function exportUserData(userData) {
@@ -2087,136 +2146,8 @@ function exportUserData(userData) {
     showAdvancedNotification('✅ User data exported successfully', 'success');
 }
 
-function editUserData(userData) {
-    // Show edit user modal with current data
-    showEditUserModal(userData);
-}
-
-function showEditUserModal(userData) {
-    // Create a simple edit modal
-    const editModalHTML = `
-        <div class="modal-backdrop" id="edit-user-modal-backdrop">
-            <div class="modal user-edit-modal">
-                <div class="modal-header">
-                    <h3>✏️ Edit User: ${userData.displayName}</h3>
-                    <button class="modal-close-btn">&times;</button>
-                </div>
-                <div class="modal-content">
-                    <form id="edit-user-form">
-                        <div class="form-group">
-                            <label for="edit-display-name">Display Name:</label>
-                            <input type="text" id="edit-display-name" value="${userData.displayName}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-email">Email:</label>
-                            <input type="email" id="edit-email" value="${userData.email}" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-role">Role:</label>
-                            <select id="edit-role">
-                                <option value="student" ${userData.role === 'student' ? 'selected' : ''}>Student</option>
-                                <option value="teacher" ${userData.role === 'teacher' ? 'selected' : ''}>Teacher</option>
-                                <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            </select>
-                        </div>
-                        ${userData.grade ? `
-                        <div class="form-group">
-                            <label for="edit-grade">Grade:</label>
-                            <input type="text" id="edit-grade" value="${userData.grade}">
-                        </div>` : ''}
-                        ${userData.department ? `
-                        <div class="form-group">
-                            <label for="edit-department">Department:</label>
-                            <input type="text" id="edit-department" value="${userData.department}">
-                        </div>` : ''}
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline" id="cancel-edit-btn">Cancel</button>
-                    <button class="btn btn-primary" id="save-user-btn">💾 Save Changes</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Add to DOM
-    document.body.insertAdjacentHTML('beforeend', editModalHTML);
-    
-    // Add event listeners
-    const modal = document.getElementById('edit-user-modal-backdrop');
-    const closeBtn = modal.querySelector('.modal-close-btn');
-    const cancelBtn = modal.querySelector('#cancel-edit-btn');
-    const saveBtn = modal.querySelector('#save-user-btn');
-    
-    // Close modal events
-    [closeBtn, cancelBtn].forEach(btn => {
-        if (btn) {
-            btn.addEventListener('click', () => {
-                modal.remove();
-            });
-        }
-    });
-    
-    // Save user changes
-    if (saveBtn) {
-        saveBtn.addEventListener('click', async () => {
-            await saveUserChanges(userData.userId);
-            modal.remove();
-        });
-    }
-    
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    });
-    
-    // Close on Escape key
-    const escapeHandler = (e) => {
-        if (e.key === 'Escape') {
-            modal.remove();
-            document.removeEventListener('keydown', escapeHandler);
-        }
-    };
-    document.addEventListener('keydown', escapeHandler);
-}
-
-async function saveUserChanges(userId) {
-    try {
-        const displayName = document.getElementById('edit-display-name').value;
-        const email = document.getElementById('edit-email').value;
-        const role = document.getElementById('edit-role').value;
-        const grade = document.getElementById('edit-grade')?.value;
-        const department = document.getElementById('edit-department')?.value;
-        
-        // Prepare update data
-        const updateData = {
-            displayName,
-            email,
-            role,
-            updatedAt: new Date().toISOString()
-        };
-        
-        if (grade) updateData.grade = grade;
-        if (department) updateData.department = department;
-        
-        // Update in Firestore
-        await updateDoc(doc(db, 'users', userId), updateData);
-        
-        showAdvancedNotification('✅ User updated successfully', 'success');
-        
-        // Refresh the user list
-        await loadIntelligentUsersList();
-        
-    } catch (error) {
-        console.error('Error updating user:', error);
-        showAdvancedNotification('❌ Failed to update user', 'error');
-    }
-}
-
 function editUser(userId) {
-    showEditUserModal(userId);
+    showAdvancedNotification('Edit user functionality has been disabled', 'info');
 }
 
 async function deleteUser(userId) {
@@ -2816,6 +2747,8 @@ async function handleAddActivity(event, studentId) {
         // Update local data and refresh UI
         if (currentStudentData.analytics && currentStudentData.analytics.recentActivities) {
             currentStudentData.analytics.recentActivities.unshift(newActivity);
+            // Also update original activities for filtering
+            originalUserActivities.unshift(newActivity);
             loadUserActivitiesList(currentStudentData);
         }
         
@@ -2869,6 +2802,14 @@ async function handleEditActivity(event) {
                     ...currentStudentData.analytics.recentActivities[activityIndex],
                     ...updatedActivity
                 };
+                // Also update original activities for filtering
+                const originalIndex = originalUserActivities.findIndex(a => a.id === activityId);
+                if (originalIndex !== -1) {
+                    originalUserActivities[originalIndex] = {
+                        ...originalUserActivities[originalIndex],
+                        ...updatedActivity
+                    };
+                }
                 loadUserActivitiesList(currentStudentData);
             }
         }
@@ -2891,6 +2832,8 @@ async function handleDeleteActivity(activityId) {
         // Update local data and refresh UI
         if (currentStudentData.analytics && currentStudentData.analytics.recentActivities) {
             currentStudentData.analytics.recentActivities = currentStudentData.analytics.recentActivities.filter(a => a.id !== activityId);
+            // Also update original activities for filtering
+            originalUserActivities = originalUserActivities.filter(a => a.id !== activityId);
             loadUserActivitiesList(currentStudentData);
         }
         
