@@ -1,6 +1,20 @@
 // Enhanced Admin Dashboard with Advanced Analytics, DSA Integration & System Intelligence
 // Import DSA algorithms and system analytics
 import firebaseService from './firebase-service.js';
+import { db } from '../firebase/firebase-config.js';
+import { 
+    getFirestore, 
+    collection, 
+    doc, 
+    addDoc, 
+    updateDoc, 
+    getDocs, 
+    getDoc, 
+    query, 
+    where, 
+    orderBy, 
+    limit 
+} from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
 let engagementAnalyzer, predictiveAnalyzer, recommendationEngine;
 let currentUser = null;
@@ -482,7 +496,7 @@ async function loadIntelligentUsersList() {
         
         // Enhanced user display with analytics insights
         usersContainer.innerHTML = users.map(user => `
-            <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" onclick="viewUserAnalytics('${user.id}')">
+            <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" data-user-email="${user.email}" onclick="viewUserAnalytics('${user.id}')">
                 <div class="flex items-center gap-4">
                     <div class="relative">
                         <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">
@@ -547,7 +561,41 @@ async function getAllAdvancedUsers() {
     
     const users = [];
     
-    // Try to load real Firebase data first
+    // First, try to load users from the 'users' collection (newly created users)
+    try {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        
+        usersSnapshot.forEach((doc) => {
+            const userData = doc.data();
+            users.push({
+                id: doc.id,
+                displayName: userData.displayName,
+                email: userData.email,
+                role: userData.role,
+                isOnline: Math.random() > 0.7, // Simulated online status
+                lastActive: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+                createdAt: userData.createdAt,
+                grade: userData.grade,
+                department: userData.department,
+                studentId: userData.studentId,
+                employeeId: userData.employeeId,
+                analytics: {
+                    engagementScore: 'N/A', // New users start with no engagement data
+                    totalActivities: 0,
+                    isHighPerformer: false,
+                    isAtRisk: false,
+                    insights: `New ${userData.role}, created ${new Date(userData.createdAt).toLocaleDateString()}`
+                }
+            });
+        });
+        
+        console.log(`✅ Loaded ${users.length} users from 'users' collection`);
+    } catch (error) {
+        console.error('❌ Error loading users from Firestore:', error);
+    }
+    
+    // Also try to load real Firebase data from legacy collections
     if (realFirebaseData && realFirebaseData.students && realFirebaseData.teachers) {
         console.log('✅ Using real Firebase user data');
         
@@ -2132,7 +2180,6 @@ async function saveUserChanges(userId) {
         if (department) updateData.department = department;
         
         // Update in Firestore
-        const db = getFirestore();
         await updateDoc(doc(db, 'users', userId), updateData);
         
         showAdvancedNotification('✅ User updated successfully', 'success');
@@ -2240,35 +2287,169 @@ function showCreateUserModal() {
     const template = document.getElementById('create-user-modal-template');
     const modal = template.content.cloneNode(true);
     
-    // Add event listeners
-    const modalElement = modal.querySelector('.fixed');
-    modal.querySelectorAll('.modal-close').forEach(btn => {
+    // Setup dynamic form behavior
+    const roleSelect = modal.getElementById('user-role');
+    const additionalInfoSection = modal.getElementById('additional-info-section');
+    const studentFields = modal.getElementById('student-fields');
+    const teacherFields = modal.getElementById('teacher-fields');
+    
+    roleSelect.addEventListener('change', (e) => {
+        const role = e.target.value;
+        
+        if (role) {
+            additionalInfoSection.style.display = 'block';
+        } else {
+            additionalInfoSection.style.display = 'none';
+        }
+        
+        // Show/hide role-specific fields
+        studentFields.style.display = role === 'student' ? 'block' : 'none';
+        teacherFields.style.display = role === 'teacher' ? 'block' : 'none';
+    });
+    
+    // Add event listeners for modal close
+    const modalElement = modal.querySelector('.modal-backdrop');
+    modal.querySelectorAll('.modal-close-btn').forEach(btn => {
         btn.addEventListener('click', () => modalElement.remove());
     });
     
-    modal.getElementById('create-user-form').addEventListener('submit', (event) => {
-        handleCreateUser(event);
-        modalElement.remove();
+    // Close on backdrop click
+    modalElement.addEventListener('click', (e) => {
+        if (e.target === modalElement) {
+            modalElement.remove();
+        }
+    });
+    
+    // Handle form submission
+    modal.getElementById('create-user-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await handleCreateUser(event, modalElement);
     });
     
     document.body.appendChild(modal);
+    
+    // Focus on first input
+    setTimeout(() => {
+        modal.getElementById('user-display-name')?.focus();
+    }, 100);
 }
 
-function handleCreateUser(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const userData = Object.fromEntries(formData.entries());
+async function handleCreateUser(event, modalElement) {
+    const form = event.target;
+    const submitBtn = modalElement.querySelector('#create-user-submit-btn');
+    const loadingElement = modalElement.querySelector('#create-user-loading');
     
-    // In production, this would create the user in Firebase
-    console.log('Creating user:', userData);
-    
-    event.target.closest('.fixed').remove();
-    showAdvancedNotification(`✅ User ${userData.displayName} created successfully`, 'success');
-    
-    // Refresh the users list
-    setTimeout(() => {
-        loadIntelligentUsersList();
-    }, 1000);
+    try {
+        // Show loading state
+        form.style.display = 'none';
+        loadingElement.style.display = 'block';
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="spinner-sm mr-2"></div>Creating...';
+        
+        // Get form data
+        const formData = new FormData(form);
+        const userData = Object.fromEntries(formData.entries());
+        
+        // Validate required fields
+        if (!userData.displayName || !userData.email || !userData.role) {
+            throw new Error('Please fill in all required fields');
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userData.email)) {
+            throw new Error('Please enter a valid email address');
+        }
+        
+        // Check if user already exists
+        const usersRef = collection(db, 'users');
+        const emailQuery = query(usersRef, where('email', '==', userData.email));
+        const existingUsers = await getDocs(emailQuery);
+        
+        if (!existingUsers.empty) {
+            throw new Error('A user with this email already exists');
+        }
+        
+        // Prepare user document
+        const newUser = {
+            displayName: userData.displayName.trim(),
+            email: userData.email.toLowerCase().trim(),
+            role: userData.role,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            isActive: true,
+            lastLoginAt: null,
+            profilePicture: null,
+            // Generate avatar initials
+            initials: userData.displayName.trim().split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        };
+        
+        // Add role-specific fields
+        if (userData.role === 'student') {
+            if (userData.grade) newUser.grade = userData.grade.trim();
+            if (userData.studentId) newUser.studentId = userData.studentId.trim();
+            newUser.enrollmentDate = new Date().toISOString();
+        } else if (userData.role === 'teacher') {
+            if (userData.department) newUser.department = userData.department.trim();
+            if (userData.employeeId) newUser.employeeId = userData.employeeId.trim();
+            newUser.hireDate = new Date().toISOString();
+        }
+        
+        // Create user in Firestore
+        console.log('📝 Creating user with data:', newUser);
+        const docRef = await addDoc(usersRef, newUser);
+        console.log('✅ User created successfully with ID:', docRef.id);
+        console.log('📊 Full document reference:', docRef);
+        
+        // Show success notification
+        showAdvancedNotification(
+            `✅ User "${userData.displayName}" created successfully!`, 
+            'success'
+        );
+        
+        // Close modal
+        modalElement.remove();
+        
+        // Refresh the users list
+        console.log('🔄 Refreshing users list...');
+        await loadIntelligentUsersList();
+        console.log('✅ Users list refreshed');
+        
+        // Scroll to new user (optional)
+        setTimeout(() => {
+            const userCards = document.querySelectorAll('[data-user-email]');
+            const newUserCard = Array.from(userCards).find(card => 
+                card.getAttribute('data-user-email') === userData.email
+            );
+            if (newUserCard) {
+                newUserCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                newUserCard.style.backgroundColor = 'var(--success-light)';
+                setTimeout(() => {
+                    newUserCard.style.backgroundColor = '';
+                }, 2000);
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error('❌ Error creating user:', error);
+        
+        // Hide loading and show form again
+        form.style.display = 'block';
+        loadingElement.style.display = 'none';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="mr-2">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Create User
+        `;
+        
+        // Show error notification
+        showAdvancedNotification(
+            `❌ Failed to create user: ${error.message}`, 
+            'error'
+        );
+    }
 }
 
 function showSystemStatus() {

@@ -376,36 +376,133 @@
 
     <!-- Create User Modal Template -->
     <template id="create-user-modal-template">
-        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">👤 Create New User</h2>
-                    <button class="modal-close text-gray-500 hover:text-red-500">✕</button>
+        <div class="modal-backdrop">
+            <div class="modal user-create-modal">
+                <div class="modal-header">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                            👤
+                        </div>
+                        <div>
+                            <h2 class="modal-title">Create New User</h2>
+                            <p class="text-sm text-secondary">Add a new user to the system</p>
+                        </div>
+                    </div>
+                    <button class="modal-close-btn">✕</button>
                 </div>
-                <form id="create-user-form">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block font-medium mb-1">Full Name</label>
-                            <input type="text" name="displayName" required class="w-full p-2 border rounded">
+                
+                <div class="modal-content">
+                    <form id="create-user-form" class="space-y-6">
+                        <!-- Personal Information Section -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">👤 Personal Information</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="user-display-name" class="form-label">Full Name *</label>
+                                    <input 
+                                        type="text" 
+                                        id="user-display-name"
+                                        name="displayName" 
+                                        required 
+                                        class="form-input"
+                                        placeholder="Enter full name"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-email" class="form-label">Email Address *</label>
+                                    <input 
+                                        type="email" 
+                                        id="user-email"
+                                        name="email" 
+                                        required 
+                                        class="form-input"
+                                        placeholder="user@example.com"
+                                    >
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block font-medium mb-1">Email</label>
-                            <input type="email" name="email" required class="w-full p-2 border rounded">
+
+                        <!-- Role & Permissions Section -->
+                        <div class="form-section">
+                            <h3 class="form-section-title">🎭 Role & Permissions</h3>
+                            <div class="form-group">
+                                <label for="user-role" class="form-label">User Role *</label>
+                                <select id="user-role" name="role" required class="form-select">
+                                    <option value="">Select a role</option>
+                                    <option value="student">📚 Student</option>
+                                    <option value="teacher">👨‍🏫 Teacher</option>
+                                    <option value="admin">👑 Administrator</option>
+                                </select>
+                                <p class="form-help-text">Choose the appropriate role for this user</p>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block font-medium mb-1">Role</label>
-                            <select name="role" required class="w-full p-2 border rounded">
-                                <option value="student">Student</option>
-                                <option value="teacher">Teacher</option>
-                                <option value="admin">Admin</option>
-                            </select>
+
+                        <!-- Additional Information Section -->
+                        <div class="form-section" id="additional-info-section" style="display: none;">
+                            <h3 class="form-section-title">📋 Additional Information</h3>
+                            <div class="form-grid" id="student-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="user-grade" class="form-label">Grade/Year</label>
+                                    <input 
+                                        type="text" 
+                                        id="user-grade"
+                                        name="grade" 
+                                        class="form-input"
+                                        placeholder="e.g., Grade 10, Year 2"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-student-id" class="form-label">Student ID</label>
+                                    <input 
+                                        type="text" 
+                                        id="user-student-id"
+                                        name="studentId" 
+                                        class="form-input"
+                                        placeholder="e.g., STU2025001"
+                                    >
+                                </div>
+                            </div>
+                            <div class="form-grid" id="teacher-fields" style="display: none;">
+                                <div class="form-group">
+                                    <label for="user-department" class="form-label">Department</label>
+                                    <input 
+                                        type="text" 
+                                        id="user-department"
+                                        name="department" 
+                                        class="form-input"
+                                        placeholder="e.g., Computer Science"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label for="user-employee-id" class="form-label">Employee ID</label>
+                                    <input 
+                                        type="text" 
+                                        id="user-employee-id"
+                                        name="employeeId" 
+                                        class="form-input"
+                                        placeholder="e.g., EMP2025001"
+                                    >
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex gap-3 mt-6">
-                        <button type="submit" class="btn bg-primary text-white flex-1">Create User</button>
-                        <button type="button" class="btn bg-gray-200 modal-close">Cancel</button>
-                    </div>
-                </form>
+
+                        <!-- Loading State -->
+                        <div id="create-user-loading" class="text-center py-4" style="display: none;">
+                            <div class="spinner mx-auto mb-2"></div>
+                            <p class="text-sm text-secondary">Creating user...</p>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline modal-close-btn">Cancel</button>
+                    <button type="submit" form="create-user-form" class="btn btn-primary" id="create-user-submit-btn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        Create User
+                    </button>
+                </div>
             </div>
         </div>
     </template>
