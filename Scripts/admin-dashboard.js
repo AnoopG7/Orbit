@@ -562,41 +562,7 @@ async function getAllAdvancedUsers() {
     
     const users = [];
     
-    // First, try to load users from the 'users' collection (newly created users)
-    try {
-        const usersRef = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersRef);
-        
-        usersSnapshot.forEach((doc) => {
-            const userData = doc.data();
-            users.push({
-                id: doc.id,
-                displayName: userData.displayName,
-                email: userData.email,
-                role: userData.role,
-                isOnline: Math.random() > 0.7, // Simulated online status
-                lastActive: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
-                createdAt: userData.createdAt,
-                grade: userData.grade,
-                department: userData.department,
-                studentId: userData.studentId,
-                employeeId: userData.employeeId,
-                analytics: {
-                    engagementScore: 'N/A', // New users start with no engagement data
-                    totalActivities: 0,
-                    isHighPerformer: false,
-                    isAtRisk: false,
-                    insights: `New ${userData.role}, created ${new Date(userData.createdAt).toLocaleDateString()}`
-                }
-            });
-        });
-        
-        console.log(`✅ Loaded ${users.length} users from 'users' collection`);
-    } catch (error) {
-        console.error('❌ Error loading users from Firestore:', error);
-    }
-    
-    // Also try to load real Firebase data from legacy collections
+    // Load real Firebase data from collections
     if (realFirebaseData && realFirebaseData.students && realFirebaseData.teachers) {
         console.log('✅ Using real Firebase user data');
         
@@ -639,7 +605,7 @@ async function getAllAdvancedUsers() {
                 }
             });
         });
-        
+
     } else {
         console.log('⚠️ No Firebase data available - showing placeholder');
         users.push({
@@ -653,9 +619,7 @@ async function getAllAdvancedUsers() {
                 insights: 'Populate Firebase data to see real users'
             }
         });
-    }
-    
-    return users.sort((a, b) => {
+    }    return users.sort((a, b) => {
         if (a.role !== b.role) {
             const roleOrder = { admin: 0, teacher: 1, student: 2 };
             return roleOrder[a.role] - roleOrder[b.role];
@@ -772,7 +736,7 @@ async function loadSystemWideActivityAnalytics() {
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-bold">🔍 System Activity Analytics</h3>
                     <div class="flex gap-2">
-                        <button onclick="filterActivities('all')" class="btn btn-sm bg-primary text-white">All</button>
+                        <button onclick="filterActivities('all')" class="btn btn-sm">All</button>
                         <button onclick="filterActivities('critical')" class="btn btn-sm">Critical</button>
                         <button onclick="filterActivities('engagement')" class="btn btn-sm">Engagement</button>
                     </div>
@@ -1284,13 +1248,6 @@ function setupAdvancedAdminEventListeners() {
     if (roleFilter) {
         roleFilter.addEventListener('change', (e) => {
             filterUsersAdvanced(e.target.value);
-        });
-    }
-    
-    const refreshBtn = document.getElementById('refresh-users-btn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            refreshAllData();
         });
     }
     
@@ -2578,7 +2535,34 @@ function showGlobalSearchModal() {
 
 function filterUsersAdvanced(roleFilter) {
     showAdvancedNotification(`🔍 Filtering users by role: ${roleFilter}`, 'info', 1500);
-    // In production, this would filter the users list
+    
+    // Get all user cards
+    const userCards = document.querySelectorAll('.user-card');
+    
+    let visibleCount = 0;
+    
+    userCards.forEach(card => {
+        if (roleFilter === 'all') {
+            // Show all users
+            card.style.display = 'flex';
+            visibleCount++;
+        } else {
+            // Check if user card has the selected role class
+            const hasRole = card.classList.contains(`user-card-${roleFilter}`);
+            card.style.display = hasRole ? 'flex' : 'none';
+            if (hasRole) visibleCount++;
+        }
+    });
+    
+    // Update user count if there's a counter element
+    const userCounter = document.querySelector('#users-count, .users-count');
+    if (userCounter) {
+        if (roleFilter === 'all') {
+            userCounter.textContent = `${userCards.length} users`;
+        } else {
+            userCounter.textContent = `${visibleCount} of ${userCards.length} users (${roleFilter}s)`;
+        }
+    }
 }
 
 function exportSystemAnalytics() {

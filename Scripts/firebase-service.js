@@ -294,7 +294,7 @@ class FirebaseService {
         }
     }
 
-    // Analytics functions for DSA integration
+    // Analytics functions for dashboard integration
     async getEngagementAnalytics() {
         try {
             const activities = await this.getAllActivities();
