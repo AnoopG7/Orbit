@@ -482,7 +482,7 @@ async function loadIntelligentUsersList() {
         
         // Enhanced user display with analytics insights
         usersContainer.innerHTML = users.map(user => `
-            <div class="user-card user-card-${user.role} flex items-center justify-between">
+            <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" onclick="viewUserAnalytics('${user.id}')">
                 <div class="flex items-center gap-4">
                     <div class="relative">
                         <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">
@@ -504,21 +504,22 @@ async function loadIntelligentUsersList() {
                         ${user.analytics?.insights ? `<p class="text-xs text-blue-600 mt-1">${user.analytics.insights}</p>` : ''}
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3" onclick="event.stopPropagation()">
                     <div class="text-right">
                         <span class="badge badge-${getRoleBadgeColor(user.role)}">${user.role.toUpperCase()}</span>
                         ${user.role === 'student' && user.analytics?.totalActivities ? 
                             `<div class="text-xs text-muted mt-1">${user.analytics.totalActivities} activities</div>` : ''}
                     </div>
                     <div class="flex gap-1">
-                        <button class="btn btn-ghost btn-sm" onclick="viewUserAnalytics('${user.id}')" title="View Analytics">
+                        <button class="btn btn-ghost btn-sm" onclick="viewUserAnalytics('${user.id}')" title="View Details">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </button>
                         <button class="btn btn-ghost btn-sm" onclick="editUser('${user.id}')" title="Edit User">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </button>
                         <button class="btn btn-ghost btn-sm text-error" onclick="deleteUser('${user.id}')" title="Delete User">
@@ -1444,15 +1445,704 @@ function filterUsers(roleFilter) {
     // In a real implementation, you'd reload the users list with the filter
 }
 
-// Enhanced admin action handlers
-function viewUserAnalytics(userId) {
-    if (engagementAnalyzer) {
-        const userData = engagementAnalyzer.exportStudentData(userId);
-        const patterns = predictiveAnalyzer ? predictiveAnalyzer.analyzeStudentPatterns(userId) : null;
+// Enhanced admin action handlers - Comprehensive User Details Modal
+async function viewUserAnalytics(userId) {
+    await showUserDetailsModal(userId);
+}
+
+// Comprehensive User Details Modal
+async function showUserDetailsModal(userId) {
+    try {
+        console.log('🔍 Opening detailed view for user:', userId);
         
-        showUserAnalyticsModal(userId, userData, patterns);
+        // Get user data from various sources
+        const userData = await getUserCompleteData(userId);
+        
+        if (!userData) {
+            showAdvancedNotification('❌ User data not found', 'error');
+            return;
+        }
+        
+        // Clone and setup modal template
+        const template = document.getElementById('user-details-modal-template');
+        const modalClone = template.content.cloneNode(true);
+        
+        // Setup modal data
+        setupUserDetailsModalData(modalClone, userData);
+        
+        // Add event listeners
+        setupUserDetailsModalEvents(modalClone, userData);
+        
+        // Add to page
+        document.body.appendChild(modalClone);
+        
+        // Initialize charts and load additional data
+        await initializeUserDetailCharts(userData);
+        
+        console.log('✅ User details modal opened successfully');
+        
+    } catch (error) {
+        console.error('❌ Error opening user details modal:', error);
+        showAdvancedNotification('Failed to load user details', 'error');
+    }
+}
+
+async function getUserCompleteData(userId) {
+    console.log('📊 Gathering complete user data for:', userId);
+    
+    let userData = null;
+    
+    // Try to find user in Firebase data
+    if (realFirebaseData) {
+        // Check students
+        const student = realFirebaseData.students?.find(s => s.id === userId);
+        if (student) {
+            userData = {
+                ...student,
+                role: 'student',
+                type: 'student'
+            };
+        } else {
+            // Check teachers
+            const teacher = realFirebaseData.teachers?.find(t => t.id === userId);
+            if (teacher) {
+                userData = {
+                    ...teacher,
+                    role: 'teacher',
+                    type: 'teacher'
+                };
+            }
+        }
+        
+        // Get user activities if student
+        if (userData && userData.role === 'student') {
+            userData.activities = realFirebaseData.activities?.filter(a => a.studentId === userId) || [];
+            
+            // Calculate analytics
+            userData.analytics = calculateUserAnalytics(userData);
+        } else if (userData && userData.role === 'teacher') {
+            // Get teacher-specific data
+            userData.courses = realFirebaseData.courses?.filter(c => c.instructorId === userId) || [];
+            userData.analytics = calculateTeacherAnalytics(userData);
+        }
+    }
+    
+    // Fallback to demo data if no Firebase data
+    if (!userData) {
+        userData = generateDemoUserData(userId);
+    }
+    
+    return userData;
+}
+
+function calculateUserAnalytics(userData) {
+    const activities = userData.activities || [];
+    
+    if (activities.length === 0) {
+        return {
+            totalActivities: 0,
+            averageScore: 0,
+            engagementLevel: 0,
+            ranking: '#N/A',
+            trend: 'No data',
+            activityBreakdown: {}
+        };
+    }
+    
+    // Calculate basic metrics
+    const totalScore = activities.reduce((sum, a) => sum + (a.score || 0), 0);
+    const averageScore = (totalScore / activities.length).toFixed(1);
+    
+    const totalEngagement = activities.reduce((sum, a) => sum + (a.engagementLevel || 0), 0);
+    const avgEngagement = (totalEngagement / activities.length).toFixed(1);
+    
+    // Activity breakdown
+    const activityBreakdown = {};
+    activities.forEach(activity => {
+        const type = activity.activityType || 'other';
+        activityBreakdown[type] = (activityBreakdown[type] || 0) + 1;
+    });
+    
+    // Calculate ranking (simplified)
+    const totalUsers = realFirebaseData?.students?.length || 50;
+    const percentile = Math.min(95, Math.max(5, (parseFloat(avgEngagement) / 10) * 100));
+    const rank = Math.ceil((100 - percentile) / 100 * totalUsers);
+    
+    return {
+        totalActivities: activities.length,
+        averageScore: parseFloat(averageScore),
+        engagementLevel: parseFloat(avgEngagement),
+        ranking: `#${rank}`,
+        trend: parseFloat(avgEngagement) > 7 ? 'Improving' : parseFloat(avgEngagement) > 5 ? 'Stable' : 'Declining',
+        activityBreakdown,
+        recentActivities: activities.slice(-10).reverse() // Last 10 activities
+    };
+}
+
+function calculateTeacherAnalytics(userData) {
+    const courses = userData.courses || [];
+    
+    return {
+        totalCourses: courses.length,
+        studentsManaged: courses.reduce((sum, c) => sum + (c.enrolledStudents || 0), 0),
+        avgRating: userData.rating || 'N/A',
+        experience: userData.yearsExperience || 'N/A',
+        department: userData.department || 'N/A',
+        specialization: userData.specialization || 'N/A'
+    };
+}
+
+function generateDemoUserData(userId) {
+    // Generate demo data for development
+    return {
+        id: userId,
+        displayName: 'Demo User',
+        email: 'demo@example.com',
+        role: 'student',
+        type: 'student',
+        firstName: 'Demo',
+        lastName: 'User',
+        major: 'Computer Science',
+        year: 'Junior',
+        gpa: '3.7',
+        activities: [],
+        analytics: {
+            totalActivities: 0,
+            averageScore: 0,
+            engagementLevel: 0,
+            ranking: '#N/A',
+            trend: 'No data',
+            activityBreakdown: {}
+        }
+    };
+}
+
+function setupUserDetailsModalData(modalClone, userData) {
+    // Setup header information
+    const initials = getUserInitials(userData.displayName || userData.fullName || `${userData.firstName} ${userData.lastName}`);
+    modalClone.getElementById('user-initials').textContent = initials;
+    modalClone.getElementById('user-full-name').textContent = userData.displayName || userData.fullName || `${userData.firstName} ${userData.lastName}`;
+    modalClone.getElementById('user-email-role').textContent = `${userData.email} • ${userData.role?.toUpperCase()}`;
+    
+    // Setup overview stats
+    if (userData.role === 'student') {
+        modalClone.getElementById('total-activities-count').textContent = userData.analytics.totalActivities;
+        modalClone.getElementById('average-score').textContent = userData.analytics.averageScore;
+        modalClone.getElementById('engagement-level').textContent = userData.analytics.engagementLevel;
+        modalClone.getElementById('user-ranking').textContent = userData.analytics.ranking;
     } else {
-        showAdvancedNotification(`Opening analytics for user ${userId}`, 'info');
+        // Teacher stats
+        modalClone.getElementById('total-activities-count').textContent = userData.analytics.totalCourses;
+        modalClone.getElementById('average-score').textContent = userData.analytics.avgRating;
+        modalClone.getElementById('engagement-level').textContent = userData.analytics.studentsManaged;
+        modalClone.getElementById('user-ranking').textContent = userData.analytics.experience + 'y';
+        
+        // Update labels for teacher
+        modalClone.querySelector('.stat-card:nth-child(1) .stat-label').textContent = 'Total Courses';
+        modalClone.querySelector('.stat-card:nth-child(2) .stat-label').textContent = 'Rating';
+        modalClone.querySelector('.stat-card:nth-child(3) .stat-label').textContent = 'Students';
+        modalClone.querySelector('.stat-card:nth-child(4) .stat-label').textContent = 'Experience';
+    }
+    
+    // Setup tab labels based on user type
+    if (userData.role === 'teacher') {
+        modalClone.getElementById('activities-tab').textContent = '📚 Courses';
+        modalClone.getElementById('performance-tab').textContent = '👥 Students';
+    }
+    
+    // Setup personal information
+    setupPersonalInfo(modalClone, userData);
+    
+    // Setup academic information
+    setupAcademicInfo(modalClone, userData);
+}
+
+function setupPersonalInfo(modalClone, userData) {
+    const personalInfo = modalClone.getElementById('personal-info');
+    
+    const info = [
+        { label: 'Full Name', value: userData.displayName || `${userData.firstName} ${userData.lastName}` },
+        { label: 'Email', value: userData.email },
+        { label: 'Role', value: userData.role?.charAt(0).toUpperCase() + userData.role?.slice(1) },
+        { label: 'User ID', value: userData.id },
+        { label: 'Join Date', value: userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'N/A' },
+        { label: 'Last Active', value: userData.lastLoginAt ? formatTime(new Date(userData.lastLoginAt)) : 'N/A' }
+    ];
+    
+    personalInfo.innerHTML = info.map(item => `
+        <div class="info-item">
+            <span class="info-label">${item.label}</span>
+            <span class="info-value">${item.value}</span>
+        </div>
+    `).join('');
+}
+
+function setupAcademicInfo(modalClone, userData) {
+    const academicInfo = modalClone.getElementById('academic-info');
+    
+    let info = [];
+    
+    if (userData.role === 'student') {
+        info = [
+            { label: 'Major', value: userData.major || 'N/A' },
+            { label: 'Year', value: userData.year || 'N/A' },
+            { label: 'GPA', value: userData.gpa || 'N/A' },
+            { label: 'Student ID', value: userData.studentId || userData.id },
+            { label: 'Enrollment Status', value: userData.enrollmentStatus || 'Active' },
+            { label: 'Credits Completed', value: userData.creditsCompleted || 'N/A' }
+        ];
+    } else if (userData.role === 'teacher') {
+        info = [
+            { label: 'Department', value: userData.department || 'N/A' },
+            { label: 'Specialization', value: userData.specialization || 'N/A' },
+            { label: 'Employee ID', value: userData.employeeId || userData.id },
+            { label: 'Office', value: userData.office || 'N/A' },
+            { label: 'Phone', value: userData.phone || 'N/A' },
+            { label: 'Years Experience', value: userData.yearsExperience ? `${userData.yearsExperience} years` : 'N/A' }
+        ];
+    }
+    
+    academicInfo.innerHTML = info.map(item => `
+        <div class="info-item">
+            <span class="info-label">${item.label}</span>
+            <span class="info-value">${item.value}</span>
+        </div>
+    `).join('');
+}
+
+function setupUserDetailsModalEvents(modalClone, userData) {
+    // Close button events
+    modalClone.querySelectorAll('.modal-close-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelector('.modal-backdrop')?.remove();
+        });
+    });
+    
+    // Tab navigation events
+    modalClone.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            switchUserDetailsTab(targetTab);
+        });
+    });
+    
+    // Footer button events
+    modalClone.getElementById('export-user-data-btn').addEventListener('click', () => {
+        exportUserData(userData);
+    });
+    
+    modalClone.getElementById('edit-user-btn').addEventListener('click', () => {
+        editUserData(userData);
+    });
+    
+    // Activity filter event
+    modalClone.getElementById('activity-filter').addEventListener('change', (e) => {
+        filterUserActivities(e.target.value, userData);
+    });
+}
+
+function switchUserDetailsTab(tabName) {
+    // Hide all tab panes
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+    });
+    
+    // Remove active from all tabs
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Show target tab pane
+    const targetPane = document.getElementById(`${tabName}-tab-content`);
+    if (targetPane) {
+        targetPane.classList.add('active');
+    }
+    
+    // Activate clicked tab
+    const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+}
+
+async function initializeUserDetailCharts(userData) {
+    // Initialize charts after modal is in DOM
+    setTimeout(() => {
+        createUserActivityTrendChart(userData);
+        createUserPerformanceChart(userData);
+        loadUserActivitiesList(userData);
+        loadUserProgressTimeline(userData);
+    }, 100);
+}
+
+function createUserActivityTrendChart(userData) {
+    const canvas = document.getElementById('user-activity-trend-chart');
+    if (!canvas || !userData.activities) return;
+    
+    // Generate last 7 days data
+    const last7Days = [];
+    const dailyActivities = {};
+    
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        last7Days.push(dateStr);
+        dailyActivities[dateStr] = 0;
+    }
+    
+    // Count activities per day
+    userData.activities.forEach(activity => {
+        const activityDate = new Date(activity.timestamp).toISOString().split('T')[0];
+        if (dailyActivities.hasOwnProperty(activityDate)) {
+            dailyActivities[activityDate]++;
+        }
+    });
+    
+    new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: last7Days.map(date => new Date(date).toLocaleDateString('en-US', { weekday: 'short' })),
+            datasets: [{
+                label: 'Activities',
+                data: last7Days.map(date => dailyActivities[date]),
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        stepSize: 1,
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createUserPerformanceChart(userData) {
+    const canvas = document.getElementById('user-performance-chart');
+    if (!canvas || !userData.analytics?.activityBreakdown) return;
+    
+    const breakdown = userData.analytics.activityBreakdown;
+    const labels = Object.keys(breakdown);
+    const data = Object.values(breakdown);
+    
+    if (labels.length === 0) {
+        canvas.getContext('2d').fillText('No activity data available', 50, 50);
+        return;
+    }
+    
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(label => label.replace('_', ' ').toUpperCase()),
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(245, 158, 11)',
+                    'rgb(239, 68, 68)',
+                    'rgb(139, 92, 246)',
+                    'rgb(236, 72, 153)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            layout: {
+                padding: {
+                    top: 5,
+                    bottom: 5,
+                    left: 5,
+                    right: 5
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 8,
+                        usePointStyle: true,
+                        font: {
+                            size: 10
+                        },
+                        boxWidth: 10,
+                        boxHeight: 10
+                    }
+                }
+            }
+        }
+    });
+}
+
+function loadUserActivitiesList(userData) {
+    const activitiesList = document.getElementById('user-activities-list');
+    if (!activitiesList || !userData.analytics?.recentActivities) return;
+    
+    const activities = userData.analytics.recentActivities;
+    
+    if (activities.length === 0) {
+        activitiesList.innerHTML = `
+            <div class="text-center py-8 text-secondary">
+                <div class="text-4xl mb-3">📚</div>
+                <p>No activities found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    activitiesList.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+            <div class="activity-icon">
+                ${getUserActivityIcon(activity.activityType)}
+            </div>
+            <div class="activity-details">
+                <div class="activity-title">${activity.title}</div>
+                <div class="activity-meta">
+                    <span>📅 ${new Date(activity.timestamp).toLocaleDateString()}</span>
+                    <span>⏱️ ${activity.duration || 'N/A'} min</span>
+                    <span>🎯 ${activity.activityType.replace('_', ' ')}</span>
+                </div>
+                <div class="activity-score">Score: ${activity.score}/${activity.maxScore}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadUserProgressTimeline(userData) {
+    const timeline = document.getElementById('user-progress-timeline');
+    if (!timeline || !userData.analytics?.recentActivities) return;
+    
+    const activities = userData.analytics.recentActivities.slice(0, 5);
+    
+    if (activities.length === 0) {
+        timeline.innerHTML = `
+            <div class="text-center py-8 text-secondary">
+                <div class="text-3xl mb-2">📈</div>
+                <p>No progress data</p>
+            </div>
+        `;
+        return;
+    }
+    
+    timeline.innerHTML = activities.map(activity => `
+        <div class="timeline-item">
+            <div class="timeline-content">
+                <div class="timeline-title">${activity.title}</div>
+                <div class="timeline-date">${formatTime(new Date(activity.timestamp))}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getUserActivityIcon(activityType) {
+    const icons = {
+        'assignment_uploads': '📝',
+        'quiz_performance': '❓',
+        'class_participation': '🗣️',
+        'peer_collaboration': '👥',
+        'event_participation': '🎉',
+        'project_submission': '🚀',
+        'default': '📚'
+    };
+    return icons[activityType] || icons.default;
+}
+
+function filterUserActivities(filterType, userData) {
+    const activitiesList = document.getElementById('user-activities-list');
+    if (!activitiesList || !userData.analytics?.recentActivities) return;
+    
+    let filteredActivities = userData.analytics.recentActivities;
+    
+    if (filterType !== 'all') {
+        filteredActivities = userData.analytics.recentActivities.filter(activity => 
+            activity.activityType === filterType
+        );
+    }
+    
+    // Re-render with filtered data
+    userData.analytics.recentActivities = filteredActivities;
+    loadUserActivitiesList(userData);
+}
+
+function exportUserData(userData) {
+    const dataToExport = {
+        userInfo: {
+            name: userData.displayName || `${userData.firstName} ${userData.lastName}`,
+            email: userData.email,
+            role: userData.role,
+            id: userData.id
+        },
+        analytics: userData.analytics,
+        exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `user-data-${userData.id}-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    
+    showAdvancedNotification('✅ User data exported successfully', 'success');
+}
+
+function editUserData(userData) {
+    // Show edit user modal with current data
+    showEditUserModal(userData);
+}
+
+function showEditUserModal(userData) {
+    // Create a simple edit modal
+    const editModalHTML = `
+        <div class="modal-backdrop" id="edit-user-modal-backdrop">
+            <div class="modal user-edit-modal">
+                <div class="modal-header">
+                    <h3>✏️ Edit User: ${userData.displayName}</h3>
+                    <button class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-content">
+                    <form id="edit-user-form">
+                        <div class="form-group">
+                            <label for="edit-display-name">Display Name:</label>
+                            <input type="text" id="edit-display-name" value="${userData.displayName}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-email">Email:</label>
+                            <input type="email" id="edit-email" value="${userData.email}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="edit-role">Role:</label>
+                            <select id="edit-role">
+                                <option value="student" ${userData.role === 'student' ? 'selected' : ''}>Student</option>
+                                <option value="teacher" ${userData.role === 'teacher' ? 'selected' : ''}>Teacher</option>
+                                <option value="admin" ${userData.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        </div>
+                        ${userData.grade ? `
+                        <div class="form-group">
+                            <label for="edit-grade">Grade:</label>
+                            <input type="text" id="edit-grade" value="${userData.grade}">
+                        </div>` : ''}
+                        ${userData.department ? `
+                        <div class="form-group">
+                            <label for="edit-department">Department:</label>
+                            <input type="text" id="edit-department" value="${userData.department}">
+                        </div>` : ''}
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline" id="cancel-edit-btn">Cancel</button>
+                    <button class="btn btn-primary" id="save-user-btn">💾 Save Changes</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add to DOM
+    document.body.insertAdjacentHTML('beforeend', editModalHTML);
+    
+    // Add event listeners
+    const modal = document.getElementById('edit-user-modal-backdrop');
+    const closeBtn = modal.querySelector('.modal-close-btn');
+    const cancelBtn = modal.getElementById('cancel-edit-btn');
+    const saveBtn = modal.getElementById('save-user-btn');
+    
+    // Close modal events
+    [closeBtn, cancelBtn].forEach(btn => {
+        btn.addEventListener('click', () => {
+            modal.remove();
+        });
+    });
+    
+    // Save user changes
+    saveBtn.addEventListener('click', async () => {
+        await saveUserChanges(userData.userId);
+        modal.remove();
+    });
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+async function saveUserChanges(userId) {
+    try {
+        const displayName = document.getElementById('edit-display-name').value;
+        const email = document.getElementById('edit-email').value;
+        const role = document.getElementById('edit-role').value;
+        const grade = document.getElementById('edit-grade')?.value;
+        const department = document.getElementById('edit-department')?.value;
+        
+        // Prepare update data
+        const updateData = {
+            displayName,
+            email,
+            role,
+            updatedAt: new Date().toISOString()
+        };
+        
+        if (grade) updateData.grade = grade;
+        if (department) updateData.department = department;
+        
+        // Update in Firestore
+        const db = getFirestore();
+        await updateDoc(doc(db, 'users', userId), updateData);
+        
+        showAdvancedNotification('✅ User updated successfully', 'success');
+        
+        // Refresh the user list
+        await loadIntelligentUsersList();
+        
+    } catch (error) {
+        console.error('Error updating user:', error);
+        showAdvancedNotification('❌ Failed to update user', 'error');
     }
 }
 

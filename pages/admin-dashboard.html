@@ -140,7 +140,7 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div id="users-list" style="max-height: 320px; overflow-y: auto; padding-right: 8px;">
+                                <div id="users-list" style="max-height: 510px; overflow-y: auto; padding-right: 8px;">
                                     <!-- Users will be loaded dynamically -->
                                     <div class="text-center py-8 text-secondary">
                                         <div class="text-4xl mb-3">👥</div>
@@ -156,7 +156,7 @@
                                 <h3 class="card-title">System Activity Log</h3>
                             </div>
                             <div class="card-body">
-                                <div id="activity-log" class="space-y-3">
+                                <div id="activity-log" class="space-y-3" style="max-height: 510px; overflow-y: auto; padding-right: 8px;">
                                     <!-- Activity items will be loaded dynamically -->
                                     <div class="text-center py-8 text-secondary">
                                         <div class="text-4xl mb-3">📊</div>
@@ -256,6 +256,9 @@
         <div id="footer-container" data-component="../components/footer.html"></div>
     </div>
 
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
     <!-- Firebase Scripts -->
     <script type="module" src="../firebase/app.js"></script>
     <script src="../firebase/auth.js"></script>
@@ -444,6 +447,140 @@
                     </ul>
                 </div>
                 <button class="btn bg-gray-200 w-full mt-4 modal-close">Close</button>
+            </div>
+        </div>
+    </template>
+
+    <!-- User Details Modal Template -->
+    <template id="user-details-modal-template">
+        <div class="modal-backdrop">
+            <div class="user-details-modal">
+                <div class="modal-header">
+                    <div class="flex items-center gap-4">
+                        <div class="user-avatar">
+                            <span id="user-initials">AB</span>
+                        </div>
+                        <div>
+                            <h2 id="user-full-name">Loading...</h2>
+                            <p id="user-email-role" class="text-secondary">Loading...</p>
+                        </div>
+                    </div>
+                    <button class="modal-close-btn">✕</button>
+                </div>
+                
+                <div class="modal-content">
+                    <!-- Navigation Tabs -->
+                    <div class="modal-nav">
+                        <button class="nav-tab active" data-tab="overview">📊 Overview</button>
+                        <button class="nav-tab" data-tab="activities" id="activities-tab">📚 Activities</button>
+                        <button class="nav-tab" data-tab="performance" id="performance-tab">📈 Performance</button>
+                        <button class="nav-tab" data-tab="details" id="details-tab">👤 Details</button>
+                    </div>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Overview Tab -->
+                        <div id="overview-tab-content" class="tab-pane active">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-icon">📚</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Total Activities</div>
+                                        <div class="stat-value" id="total-activities-count">0</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">🎯</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Average Score</div>
+                                        <div class="stat-value" id="average-score">0</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">📈</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Engagement Level</div>
+                                        <div class="stat-value" id="engagement-level">0</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">🏆</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Ranking</div>
+                                        <div class="stat-value" id="user-ranking">#0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <h3>📊 Activity Trends (Last 7 Days)</h3>
+                                <div style="height: 180px; position: relative;">
+                                    <canvas id="user-activity-trend-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Activities Tab -->
+                        <div id="activities-tab-content" class="tab-pane">
+                            <div class="activities-header">
+                                <h3>📚 Recent Activities</h3>
+                                <select id="activity-filter" class="form-select">
+                                    <option value="all">All Activities</option>
+                                    <option value="assignment_uploads">Assignments</option>
+                                    <option value="quiz_performance">Quizzes</option>
+                                    <option value="class_participation">Participation</option>
+                                    <option value="peer_collaboration">Collaboration</option>
+                                    <option value="event_participation">Events</option>
+                                </select>
+                            </div>
+                            <div class="activities-list" id="user-activities-list">
+                                <!-- Activities will be loaded here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Tab -->
+                        <div id="performance-tab-content" class="tab-pane">
+                            <div class="performance-grid">
+                                <div class="performance-section">
+                                    <h3>📊 Performance Distribution</h3>
+                                    <div style="height: 200px; position: relative;">
+                                        <canvas id="user-performance-chart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="performance-section">
+                                    <h3>📈 Progress Timeline</h3>
+                                    <div class="progress-timeline" id="user-progress-timeline">
+                                        <!-- Timeline items will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Details Tab -->
+                        <div id="details-tab-content" class="tab-pane">
+                            <div class="details-grid">
+                                <div class="details-section">
+                                    <h3>👤 Personal Information</h3>
+                                    <div class="info-list" id="personal-info">
+                                        <!-- Personal info will be loaded here -->
+                                    </div>
+                                </div>
+                                <div class="details-section">
+                                    <h3>🎓 Academic Information</h3>
+                                    <div class="info-list" id="academic-info">
+                                        <!-- Academic info will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-outline" id="export-user-data-btn">📊 Export Data</button>
+                    <button class="btn btn-primary" id="edit-user-btn">✏️ Edit User</button>
+                    <button class="btn btn-secondary modal-close-btn">Close</button>
+                </div>
             </div>
         </div>
     </template>
