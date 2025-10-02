@@ -8,6 +8,7 @@ import {
     doc, 
     addDoc, 
     updateDoc, 
+    deleteDoc,
     getDocs, 
     getDoc, 
     query, 
@@ -2197,8 +2198,62 @@ function editUser(userId) {
     showEditUserModal(userId);
 }
 
-function deleteUser(userId) {
-    showDeleteConfirmationModal(userId);
+async function deleteUser(userId) {
+    try {
+        // Get user data first
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        
+        if (!userDoc.exists()) {
+            showAdvancedNotification('❌ User not found', 'error');
+            return;
+        }
+        
+        const userData = userDoc.data();
+        
+        // Simple confirmation dialog
+        const confirmMessage = `Are you sure you want to delete user "${userData.displayName}" (${userData.email})?\n\nThis action cannot be undone.`;
+        
+        if (confirm(confirmMessage)) {
+            await handleUserDeletion(userId, userData);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error loading user for deletion:', error);
+        showAdvancedNotification('❌ Failed to load user data', 'error');
+    }
+}
+
+async function handleUserDeletion(userId, userData) {
+    try {
+        console.log('🗑️ Deleting user:', userId, userData);
+        
+        // Show loading notification
+        showAdvancedNotification('🗑️ Deleting user...', 'info');
+        
+        // Delete from Firestore
+        await deleteDoc(doc(db, 'users', userId));
+        console.log('✅ User deleted from Firestore');
+        
+        // Show success notification
+        showAdvancedNotification(
+            `✅ User "${userData.displayName}" deleted successfully`, 
+            'success'
+        );
+        
+        // Refresh users list
+        console.log('🔄 Refreshing users list after deletion...');
+        await loadIntelligentUsersList();
+        console.log('✅ Users list refreshed');
+        
+    } catch (error) {
+        console.error('❌ Error deleting user:', error);
+        
+        // Show error notification
+        showAdvancedNotification(
+            `❌ Failed to delete user: ${error.message}`, 
+            'error'
+        );
+    }
 }
 
 function handleAlertAction(alertId, actionType) {
