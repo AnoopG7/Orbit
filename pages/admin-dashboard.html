@@ -925,5 +925,130 @@
             </div>
         </div>
     </template>
+
+    <!-- Teacher Details Modal Template -->
+    <template id="teacher-details-modal-template">
+        <div class="modal-backdrop">
+            <div class="user-details-modal">
+                <!-- Header -->
+                <div class="modal-header">
+                    <div class="flex items-center gap-4">
+                        <div class="user-avatar">
+                            <span id="teacher-initials">TD</span>
+                        </div>
+                        <div>
+                            <h2 id="teacher-full-name">Teacher Name</h2>
+                            <p id="teacher-email-role" class="text-secondary">teacher@example.com • TEACHER</p>
+                        </div>
+                    </div>
+                    <button class="modal-close-btn">✕</button>
+                </div>
+                
+                <!-- Content -->
+                <div class="modal-content">
+                    <!-- Navigation Tabs -->
+                    <div class="modal-nav">
+                        <button class="nav-tab active" data-tab="overview">📊 Overview</button>
+                        <button class="nav-tab" data-tab="courses">📚 Courses</button>
+                        <button class="nav-tab" data-tab="details">👤 Details</button>
+                    </div>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <!-- Overview Tab -->
+                        <div id="overview-tab-content" class="tab-pane active">
+                            <!-- Teacher Stats -->
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-icon">📚</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Total Courses</div>
+                                        <div class="stat-value" id="teacher-total-courses">0</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">👥</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Students Managed</div>
+                                        <div class="stat-value" id="teacher-students-managed">0</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">⭐</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Average Rating</div>
+                                        <div class="stat-value" id="teacher-avg-rating">N/A</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon">🎓</div>
+                                    <div class="stat-info">
+                                        <div class="stat-label">Experience</div>
+                                        <div class="stat-value" id="teacher-experience">N/A</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Info Cards -->
+                            <div class="details-grid mt-6">
+                                <div class="details-section">
+                                    <h3>👤 Personal Information</h3>
+                                    <div class="info-list" id="teacher-personal-info">
+                                        <!-- Personal info will be loaded here -->
+                                    </div>
+                                </div>
+                                
+                                <div class="details-section">
+                                    <h3>🎓 Professional Information</h3>
+                                    <div class="info-list" id="teacher-professional-info">
+                                        <!-- Professional info will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Courses Tab -->
+                        <div id="courses-tab-content" class="tab-pane">
+                            <div class="activities-container">
+                                <div class="activities-header">
+                                    <h3 class="text-lg font-semibold">📚 Courses Taught</h3>
+                                </div>
+                                
+                                <div id="teacher-courses-list">
+                                    <!-- Courses will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Details Tab -->
+                        <div id="details-tab-content" class="tab-pane">
+                            <div class="details-grid">
+                                <div class="details-section">
+                                    <h3>🆔 Account Information</h3>
+                                    <div class="info-list" id="teacher-account-info">
+                                        <!-- Account info will be loaded here -->
+                                    </div>
+                                </div>
+                                
+                                <div class="details-section">
+                                    <h3>📊 Teaching Statistics</h3>
+                                    <div class="info-list" id="teacher-teaching-stats">
+                                        <!-- Teaching stats will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="modal-footer">
+                    <button id="export-teacher-data-btn" class="btn btn-outline">📊 Export Data</button>
+                    <button class="btn btn-secondary modal-close-btn">Close</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
 </body>
 </html>

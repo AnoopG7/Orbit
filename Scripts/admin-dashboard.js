@@ -184,9 +184,6 @@ async function generateSampleSystemData() {
 }
 
 async function initializeAdvancedAdminDashboard(user, userProfile) {
-    // Show loading state
-    showSystemLoadingState();
-    
     try {
         // Initialize comprehensive admin dashboard with advanced analytics
         await Promise.all([
@@ -209,41 +206,13 @@ async function initializeAdvancedAdminDashboard(user, userProfile) {
         // Setup advanced admin tools
         initializeAdvancedAdminTools();
         
-        hideSystemLoadingState();
         showAdvancedNotification('🎯 Advanced Admin Dashboard fully loaded with AI insights', 'success', 3000);
         
         console.log('🚀 Advanced Admin Dashboard fully initialized with DSA analytics');
         
     } catch (error) {
         console.error('❌ Error initializing advanced admin dashboard:', error);
-        hideSystemLoadingState();
         showAdvancedNotification('Dashboard initialization failed. Some features may be limited.', 'error', 5000);
-    }
-}
-
-function showSystemLoadingState() {
-    const loadingHTML = `
-        <div id="system-loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg p-6 text-center">
-                <div class="animate-pulse text-4xl mb-4">🔄</div>
-                <h3 class="text-xl font-bold mb-2">Initializing Advanced Analytics</h3>
-                <p class="text-gray-600">Loading system-wide insights and DSA algorithms...</p>
-                <div class="mt-4">
-                    <div class="bg-gray-200 rounded-full h-2 w-64">
-                        <div class="bg-blue-500 h-2 rounded-full animate-pulse" style="width: 75%"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', loadingHTML);
-}
-
-function hideSystemLoadingState() {
-    const overlay = document.getElementById('system-loading-overlay');
-    if (overlay) {
-        overlay.remove();
     }
 }
 
@@ -1488,7 +1457,20 @@ function filterUsers(roleFilter) {
 
 // Enhanced admin action handlers - Comprehensive User Details Modal
 async function viewUserAnalytics(userId) {
-    await showUserDetailsModal(userId);
+    // Get user data first to determine type
+    const userData = await getUserCompleteData(userId);
+    
+    if (!userData) {
+        showAdvancedNotification('❌ User data not found', 'error');
+        return;
+    }
+    
+    // Route to appropriate modal based on user role
+    if (userData.role === 'teacher') {
+        await showTeacherDetailsModal(userData);
+    } else {
+        await showUserDetailsModal(userId); // Existing student modal
+    }
 }
 
 // Comprehensive User Details Modal
@@ -1536,8 +1518,99 @@ async function getUserCompleteData(userId) {
     
     let userData = null;
     
-    // Try to find user in Firebase data
-    if (realFirebaseData) {
+    // First, try to find user in the 'users' collection (newly created users)
+    try {
+        const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const db = window.db;
+        
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+            const userDoc = userSnap.data();
+            userData = {
+                id: userId,
+                userId: userId,
+                ...userDoc,
+                // Ensure we have the proper fields for compatibility
+                fullName: userDoc.displayName,
+                firstName: userDoc.displayName?.split(' ')[0] || '',
+                lastName: userDoc.displayName?.split(' ').slice(1).join(' ') || ''
+            };
+            console.log('✅ Found user in users collection:', userData);
+            
+            // Load role-specific data
+            if (userData.role === 'student' || !userData.role) {
+                // Load activities for students
+                try {
+                    const { collection, query, where, orderBy, limit, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+                    const activitiesRef = collection(db, 'activities');
+                    const q = query(
+                        activitiesRef,
+                        where('studentId', '==', userId),
+                        orderBy('timestamp', 'desc'),
+                        limit(10)
+                    );
+                    
+                    const snapshot = await getDocs(q);
+                    const freshActivities = [];
+                    
+                    snapshot.forEach((doc) => {
+                        const activityData = doc.data();
+                        freshActivities.push({
+                            id: doc.id,
+                            ...activityData,
+                            timestamp: activityData.timestamp?.toDate ? activityData.timestamp.toDate() : new Date(activityData.timestamp)
+                        });
+                    });
+                    
+                    userData.activities = freshActivities;
+                    userData.analytics = calculateUserAnalytics(userData);
+                    console.log('✅ Loaded activities for student from users collection:', freshActivities.length);
+                    
+                } catch (error) {
+                    console.warn('⚠️ Could not load activities for users collection user:', error);
+                    userData.activities = [];
+                    userData.analytics = calculateUserAnalytics(userData);
+                }
+            } else if (userData.role === 'teacher') {
+                // Load courses for teachers
+                try {
+                    const { collection, query, where, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+                    const coursesRef = collection(db, 'courses');
+                    const q = query(
+                        coursesRef,
+                        where('instructorId', '==', userId)
+                    );
+                    
+                    const snapshot = await getDocs(q);
+                    const courses = [];
+                    
+                    snapshot.forEach((doc) => {
+                        const courseData = doc.data();
+                        courses.push({
+                            id: doc.id,
+                            ...courseData
+                        });
+                    });
+                    
+                    userData.courses = courses;
+                    userData.analytics = calculateTeacherAnalytics(userData);
+                    console.log('✅ Loaded courses for teacher from users collection:', courses.length);
+                    
+                } catch (error) {
+                    console.warn('⚠️ Could not load courses for teacher:', error);
+                    userData.courses = [];
+                    userData.analytics = calculateTeacherAnalytics(userData);
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('⚠️ Could not check users collection:', error);
+    }
+    
+    // If not found in users collection, try to find user in Firebase cached data
+    if (!userData && realFirebaseData) {
         // Check students
         const student = realFirebaseData.students?.find(s => s.id === userId);
         if (student) {
@@ -1609,6 +1682,233 @@ async function getUserCompleteData(userId) {
     }
     
     return userData;
+}
+
+// Teacher Details Modal
+async function showTeacherDetailsModal(userData) {
+    try {
+        console.log('👨‍🏫 Opening teacher details modal for:', userData.id);
+        
+        // Create modal from template
+        const modalClone = createTeacherModalTemplate(userData);
+        document.body.appendChild(modalClone);
+        
+        console.log('✅ Teacher details modal opened successfully');
+        
+    } catch (error) {
+        console.error('❌ Error opening teacher details modal:', error);
+        showAdvancedNotification('Failed to load teacher details', 'error');
+    }
+}
+
+function createTeacherModalTemplate(userData) {
+    const template = document.getElementById('teacher-details-modal-template');
+    const modalClone = template.content.cloneNode(true);
+    
+    // Populate the template with user data
+    modalClone.getElementById('teacher-initials').textContent = getUserInitials(userData.displayName || userData.fullName);
+    modalClone.getElementById('teacher-full-name').textContent = userData.displayName || userData.fullName;
+    modalClone.getElementById('teacher-email-role').textContent = `${userData.email} • TEACHER`;
+    
+    // Populate stats
+    modalClone.getElementById('teacher-total-courses').textContent = userData.analytics?.totalCourses || userData.courses?.length || 0;
+    modalClone.getElementById('teacher-students-managed').textContent = userData.analytics?.studentsManaged || userData.totalStudents || 0;
+    modalClone.getElementById('teacher-avg-rating').textContent = userData.analytics?.avgRating || userData.rating || 'N/A';
+    modalClone.getElementById('teacher-experience').textContent = userData.experience || userData.yearsExperience || 'N/A';
+    
+    // Populate personal information
+    const personalInfo = modalClone.getElementById('teacher-personal-info');
+    personalInfo.innerHTML = `
+        <div class="info-item">
+            <span class="info-label">Full Name:</span>
+            <span class="info-value">${userData.displayName || userData.fullName}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Email:</span>
+            <span class="info-value">${userData.email}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Employee ID:</span>
+            <span class="info-value">${userData.employeeId || userData.id}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Join Date:</span>
+            <span class="info-value">${userData.createdAt ? new Date(userData.createdAt.toDate ? userData.createdAt.toDate() : userData.createdAt).toLocaleDateString() : 'N/A'}</span>
+        </div>
+    `;
+    
+    // Populate professional information
+    const professionalInfo = modalClone.getElementById('teacher-professional-info');
+    professionalInfo.innerHTML = `
+        <div class="info-item">
+            <span class="info-label">Department:</span>
+            <span class="info-value">${userData.department || 'Computer Science'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Specialization:</span>
+            <span class="info-value">${userData.specialization || userData.expertise || 'General Education'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Office:</span>
+            <span class="info-value">${userData.office || userData.officeLocation || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Phone:</span>
+            <span class="info-value">${userData.phone || userData.phoneNumber || 'N/A'}</span>
+        </div>
+    `;
+    
+    // Populate courses list
+    const coursesList = modalClone.getElementById('teacher-courses-list');
+    if (userData.courses && userData.courses.length > 0) {
+        coursesList.innerHTML = `
+            <div class="activities-list">
+                ${userData.courses.map(course => `
+                    <div class="activity-item">
+                        <div class="activity-icon">📚</div>
+                        <div class="activity-details">
+                            <div class="activity-title">${course.courseName || course.name || course.title}</div>
+                            <div class="activity-meta">
+                                <span class="activity-type">Course Code: ${course.courseCode || course.id}</span>
+                                <span class="activity-date">${course.enrolledStudents || course.studentCount || 0} students enrolled</span>
+                            </div>
+                            <div class="activity-description">
+                                ${course.description || 'No description available'}
+                            </div>
+                        </div>
+                        <div class="activity-score">
+                            <span class="score-value">${course.credits || 3}</span>
+                            <span class="score-label">Credits</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        coursesList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📚</div>
+                <h3>No Courses Assigned</h3>
+                <p>This teacher hasn't been assigned any courses yet.</p>
+            </div>
+        `;
+    }
+    
+    // Populate account information
+    const accountInfo = modalClone.getElementById('teacher-account-info');
+    accountInfo.innerHTML = `
+        <div class="info-item">
+            <span class="info-label">User ID:</span>
+            <span class="info-value">${userData.id}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Role:</span>
+            <span class="info-value">Teacher</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Status:</span>
+            <span class="info-value text-success">Active</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Last Login:</span>
+            <span class="info-value">${userData.lastLogin ? new Date(userData.lastLogin).toLocaleDateString() : 'N/A'}</span>
+        </div>
+    `;
+    
+    // Populate teaching statistics
+    const teachingStats = modalClone.getElementById('teacher-teaching-stats');
+    teachingStats.innerHTML = `
+        <div class="info-item">
+            <span class="info-label">Years of Experience:</span>
+            <span class="info-value">${userData.experience || userData.yearsExperience || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Total Courses:</span>
+            <span class="info-value">${userData.courses?.length || 0}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Average Rating:</span>
+            <span class="info-value">${userData.rating || 'N/A'}</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">Department:</span>
+            <span class="info-value">${userData.department || 'Computer Science'}</span>
+        </div>
+    `;
+    
+    // Setup tab switching functionality
+    const tabButtons = modalClone.querySelectorAll('.nav-tab');
+    const tabPanes = modalClone.querySelectorAll('.tab-pane');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+            
+            // Remove active class from all tabs and panes
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanes.forEach(pane => pane.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            button.classList.add('active');
+            
+            // Show corresponding pane
+            const targetPane = modalClone.querySelector(`#${targetTab}-tab-content`);
+            if (targetPane) {
+                targetPane.classList.add('active');
+            }
+        });
+    });
+    
+    // Setup export button
+    const exportBtn = modalClone.getElementById('export-teacher-data-btn');
+    exportBtn.addEventListener('click', () => exportTeacherData(userData.id));
+    
+    // Setup event listeners
+    modalClone.querySelectorAll('.modal-close-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelector('.modal-backdrop')?.remove();
+        });
+    });
+    
+    // Close on backdrop click
+    modalClone.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-backdrop')) {
+            document.querySelector('.modal-backdrop')?.remove();
+        }
+    });
+    
+    // Close on escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            document.querySelector('.modal-backdrop')?.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
+    return modalClone;
+}
+
+function exportTeacherData(teacherId) {
+    showAdvancedNotification('📊 Exporting teacher data...', 'info', 2000);
+    
+    setTimeout(() => {
+        const dataToExport = {
+            teacherId: teacherId,
+            exportDate: new Date().toISOString(),
+            dataType: 'teacher_profile',
+            message: 'Teacher data export functionality - ready for implementation'
+        };
+        
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `teacher-data-${teacherId}-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        
+        showAdvancedNotification('✅ Teacher data exported successfully', 'success');
+    }, 2000);
 }
 
 function calculateUserAnalytics(userData) {
@@ -1793,6 +2093,22 @@ function setupUserDetailsModalEvents(modalClone, userData) {
             document.querySelector('.modal-backdrop')?.remove();
         });
     });
+    
+    // Close on backdrop click
+    modalClone.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-backdrop')) {
+            document.querySelector('.modal-backdrop')?.remove();
+        }
+    });
+    
+    // Close on escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            document.querySelector('.modal-backdrop')?.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
     
     // Tab navigation events
     modalClone.querySelectorAll('.nav-tab').forEach(tab => {
@@ -2327,6 +2643,15 @@ function showCreateUserModal() {
         }
     });
     
+    // Close on escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modalElement.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+    
     // Handle form submission
     modal.getElementById('create-user-form').addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -2523,6 +2848,15 @@ function showGlobalSearchModal() {
     modal.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', () => modalElement.remove());
     });
+    
+    // Close on escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modalElement.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
     
     document.body.appendChild(modal);
     modal.getElementById('global-search-input').focus();
@@ -2993,6 +3327,7 @@ window.quickExport = quickExport;
 window.showGlobalSearchModal = showGlobalSearchModal;
 window.handleCreateUser = handleCreateUser;
 window.generateUserReport = generateUserReport;
+window.exportTeacherData = exportTeacherData;
 
 // Activity CRUD function exports
 window.showAddActivityModal = showAddActivityModal;
