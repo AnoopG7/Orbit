@@ -561,7 +561,6 @@ async function getAllAdvancedUsers() {
     console.log('📊 Loading users from Firebase data...');
     
     const users = [];
-    const seenEmails = new Set(); // Track emails to prevent duplicates
     
     // First, try to load users from the 'users' collection (newly created users)
     try {
@@ -570,29 +569,26 @@ async function getAllAdvancedUsers() {
         
         usersSnapshot.forEach((doc) => {
             const userData = doc.data();
-            if (!seenEmails.has(userData.email)) {
-                seenEmails.add(userData.email);
-                users.push({
-                    id: doc.id,
-                    displayName: userData.displayName,
-                    email: userData.email,
-                    role: userData.role,
-                    isOnline: Math.random() > 0.7, // Simulated online status
-                    lastActive: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
-                    createdAt: userData.createdAt,
-                    grade: userData.grade,
-                    department: userData.department,
-                    studentId: userData.studentId,
-                    employeeId: userData.employeeId,
-                    analytics: {
-                        engagementScore: 'N/A', // New users start with no engagement data
-                        totalActivities: 0,
-                        isHighPerformer: false,
-                        isAtRisk: false,
-                        insights: `New ${userData.role}, created ${new Date(userData.createdAt).toLocaleDateString()}`
-                    }
-                });
-            }
+            users.push({
+                id: doc.id,
+                displayName: userData.displayName,
+                email: userData.email,
+                role: userData.role,
+                isOnline: Math.random() > 0.7, // Simulated online status
+                lastActive: userData.updatedAt ? new Date(userData.updatedAt) : new Date(),
+                createdAt: userData.createdAt,
+                grade: userData.grade,
+                department: userData.department,
+                studentId: userData.studentId,
+                employeeId: userData.employeeId,
+                analytics: {
+                    engagementScore: 'N/A', // New users start with no engagement data
+                    totalActivities: 0,
+                    isHighPerformer: false,
+                    isAtRisk: false,
+                    insights: `New ${userData.role}, created ${new Date(userData.createdAt).toLocaleDateString()}`
+                }
+            });
         });
         
         console.log(`✅ Loaded ${users.length} users from 'users' collection`);
@@ -600,72 +596,66 @@ async function getAllAdvancedUsers() {
         console.error('❌ Error loading users from Firestore:', error);
     }
     
-    // Also try to load real Firebase data from legacy collections (avoid duplicates)
+    // Also try to load real Firebase data from legacy collections
     if (realFirebaseData && realFirebaseData.students && realFirebaseData.teachers) {
         console.log('✅ Using real Firebase user data');
         
-        // Add real students (only if not already added)
+        // Add real students
         realFirebaseData.students.forEach(student => {
-            if (!seenEmails.has(student.email)) {
-                seenEmails.add(student.email);
-                const activities = realFirebaseData.activities?.filter(a => a.studentId === student.id) || [];
-                const avgEngagement = activities.length > 0 ? 
-                    (activities.reduce((sum, a) => sum + (a.engagementLevel || 0), 0) / activities.length).toFixed(1) : 'N/A';
-                
-                users.push({
-                    id: student.id,
-                    displayName: student.fullName || `${student.firstName} ${student.lastName}`,
-                    email: student.email,
-                    role: 'student',
-                    isOnline: Math.random() > 0.7, // Simulated online status
-                    lastActive: student.lastLoginAt ? new Date(student.lastLoginAt) : new Date(),
-                    analytics: {
-                        engagementScore: avgEngagement,
-                        totalActivities: activities.length,
-                        isHighPerformer: parseFloat(avgEngagement) > 8,
-                        isAtRisk: parseFloat(avgEngagement) < 5,
-                        insights: `${activities.length} activities, ${student.major} major`
-                    }
-                });
-            }
-        });
-        
-        // Add real teachers (only if not already added)
-        realFirebaseData.teachers.forEach(teacher => {
-            if (!seenEmails.has(teacher.email)) {
-                seenEmails.add(teacher.email);
-                users.push({
-                    id: teacher.id,
-                    displayName: teacher.fullName,
-                    email: teacher.email,
-                    role: 'teacher',
-                    isOnline: Math.random() > 0.5,
-                    lastActive: new Date(),
-                    analytics: {
-                        studentsManaged: teacher.coursesTeaching * 15, // Estimate
-                        avgClassEngagement: teacher.rating || 'N/A',
-                        insights: `${teacher.department}, ${teacher.specialization}`
-                    }
-                });
-            }
-        });
-
-    } else {
-        console.log('⚠️ No Firebase data available - showing placeholder');
-        if (!seenEmails.has('admin@demo.edu')) {
+            const activities = realFirebaseData.activities?.filter(a => a.studentId === student.id) || [];
+            const avgEngagement = activities.length > 0 ? 
+                (activities.reduce((sum, a) => sum + (a.engagementLevel || 0), 0) / activities.length).toFixed(1) : 'N/A';
+            
             users.push({
-                id: 'demo_admin',
-                displayName: 'Demo Administrator',
-                email: 'admin@demo.edu',
-                role: 'admin',
-                isOnline: true,
-                lastActive: new Date(),
+                id: student.id,
+                displayName: student.fullName || `${student.firstName} ${student.lastName}`,
+                email: student.email,
+                role: 'student',
+                isOnline: Math.random() > 0.7, // Simulated online status
+                lastActive: student.lastLoginAt ? new Date(student.lastLoginAt) : new Date(),
                 analytics: {
-                    insights: 'Populate Firebase data to see real users'
+                    engagementScore: avgEngagement,
+                    totalActivities: activities.length,
+                    isHighPerformer: parseFloat(avgEngagement) > 8,
+                    isAtRisk: parseFloat(avgEngagement) < 5,
+                    insights: `${activities.length} activities, ${student.major} major`
                 }
             });
-        }
-    }    return users.sort((a, b) => {
+        });
+        
+        // Add real teachers
+        realFirebaseData.teachers.forEach(teacher => {
+            users.push({
+                id: teacher.id,
+                displayName: teacher.fullName,
+                email: teacher.email,
+                role: 'teacher',
+                isOnline: Math.random() > 0.5,
+                lastActive: new Date(),
+                analytics: {
+                    studentsManaged: teacher.coursesTeaching * 15, // Estimate
+                    avgClassEngagement: teacher.rating || 'N/A',
+                    insights: `${teacher.department}, ${teacher.specialization}`
+                }
+            });
+        });
+        
+    } else {
+        console.log('⚠️ No Firebase data available - showing placeholder');
+        users.push({
+            id: 'demo_admin',
+            displayName: 'Demo Administrator',
+            email: 'admin@demo.edu',
+            role: 'admin',
+            isOnline: true,
+            lastActive: new Date(),
+            analytics: {
+                insights: 'Populate Firebase data to see real users'
+            }
+        });
+    }
+    
+    return users.sort((a, b) => {
         if (a.role !== b.role) {
             const roleOrder = { admin: 0, teacher: 1, student: 2 };
             return roleOrder[a.role] - roleOrder[b.role];
@@ -1286,14 +1276,6 @@ function setupAdvancedAdminEventListeners() {
     if (analyticsBtn) {
         analyticsBtn.addEventListener('click', () => {
             showAdvancedAnalyticsPanel();
-        });
-    }
-    
-    // Enhanced filtering and search
-    const roleFilter = document.getElementById('role-filter');
-    if (roleFilter) {
-        roleFilter.addEventListener('change', (e) => {
-            filterUsersAdvanced(e.target.value);
         });
     }
     
