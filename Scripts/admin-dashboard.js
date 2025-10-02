@@ -534,7 +534,7 @@ async function loadIntelligentUsersList() {
                         </button>
                         <button class="btn btn-ghost btn-sm" onclick="editUser('${user.id}')" title="Edit User">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                             </svg>
                         </button>
                         <button class="btn btn-ghost btn-sm text-error" onclick="deleteUser('${user.id}')" title="Delete User">
@@ -1279,6 +1279,18 @@ function setupAdvancedAdminEventListeners() {
         });
     }
     
+    // Role filter dropdown
+    const roleFilter = document.getElementById('role-filter');
+    if (roleFilter) {
+        console.log('✅ Setting up role filter event listener');
+        roleFilter.addEventListener('change', (e) => {
+            console.log('🔄 Role filter changed to:', e.target.value);
+            filterUsersAdvanced(e.target.value);
+        });
+    } else {
+        console.warn('⚠️ Role filter dropdown not found');
+    }
+    
     // Search functionality
     setupSearchFunctionality();
     
@@ -1969,7 +1981,7 @@ function loadUserActivitiesList(userData) {
     }
     
     activitiesList.innerHTML = activities.map(activity => `
-        <div class="activity-item">
+        <div class="activity-item" data-activity-id="${activity.id}">
             <div class="activity-icon">
                 ${getUserActivityIcon(activity.activityType)}
             </div>
@@ -1982,8 +1994,19 @@ function loadUserActivitiesList(userData) {
                 </div>
                 <div class="activity-score">Score: ${activity.score}/${activity.maxScore}</div>
             </div>
+            <div class="activity-actions">
+                <button class="btn btn-outline btn-sm edit-activity-btn" data-activity-id="${activity.id}" title="Edit Activity">
+                    ✏️
+                </button>
+                <button class="btn btn-error btn-sm delete-activity-btn" data-activity-id="${activity.id}" title="Delete Activity">
+                    🗑️
+                </button>
+            </div>
         </div>
     `).join('');
+    
+    // Setup event listeners for activity CRUD operations
+    setupActivityCRUDEventListeners(userData);
 }
 
 function loadUserProgressTimeline(userData) {
@@ -2122,21 +2145,25 @@ function showEditUserModal(userData) {
     // Add event listeners
     const modal = document.getElementById('edit-user-modal-backdrop');
     const closeBtn = modal.querySelector('.modal-close-btn');
-    const cancelBtn = modal.getElementById('cancel-edit-btn');
-    const saveBtn = modal.getElementById('save-user-btn');
+    const cancelBtn = modal.querySelector('#cancel-edit-btn');
+    const saveBtn = modal.querySelector('#save-user-btn');
     
     // Close modal events
     [closeBtn, cancelBtn].forEach(btn => {
-        btn.addEventListener('click', () => {
-            modal.remove();
-        });
+        if (btn) {
+            btn.addEventListener('click', () => {
+                modal.remove();
+            });
+        }
     });
     
     // Save user changes
-    saveBtn.addEventListener('click', async () => {
-        await saveUserChanges(userData.userId);
-        modal.remove();
-    });
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            await saveUserChanges(userData.userId);
+            modal.remove();
+        });
+    }
     
     // Close on backdrop click
     modal.addEventListener('click', (e) => {
@@ -2144,6 +2171,15 @@ function showEditUserModal(userData) {
             modal.remove();
         }
     });
+    
+    // Close on Escape key
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
 }
 
 async function saveUserChanges(userId) {
@@ -2562,10 +2598,12 @@ function showGlobalSearchModal() {
 }
 
 function filterUsersAdvanced(roleFilter) {
+    console.log(`🔍 Filtering users by role: ${roleFilter}`);
     showAdvancedNotification(`🔍 Filtering users by role: ${roleFilter}`, 'info', 1500);
     
     // Get all user cards
     const userCards = document.querySelectorAll('.user-card');
+    console.log(`Found ${userCards.length} user cards to filter`);
     
     let visibleCount = 0;
     
@@ -2609,6 +2647,385 @@ function generateUserReport(userId) {
     }, 2000);
 }
 
+// Activity CRUD Operations
+let currentStudentData = null; // Store current student data for CRUD operations
+
+function setupActivityCRUDEventListeners(userData) {
+    currentStudentData = userData;
+    
+    // Add Activity button
+    const addActivityBtn = document.getElementById('add-activity-btn');
+    if (addActivityBtn) {
+        addActivityBtn.onclick = () => showAddActivityModal(userData.id);
+    }
+    
+    // Edit Activity buttons (delegated event handling)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('edit-activity-btn') || e.target.closest('.edit-activity-btn')) {
+            const btn = e.target.classList.contains('edit-activity-btn') ? e.target : e.target.closest('.edit-activity-btn');
+            const activityId = btn.getAttribute('data-activity-id');
+            const activity = userData.analytics.recentActivities.find(a => a.id === activityId);
+            if (activity) {
+                showEditActivityModal(activity);
+            }
+        }
+    });
+    
+    // Delete Activity buttons (delegated event handling)
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-activity-btn') || e.target.closest('.delete-activity-btn')) {
+            const btn = e.target.classList.contains('delete-activity-btn') ? e.target : e.target.closest('.delete-activity-btn');
+            const activityId = btn.getAttribute('data-activity-id');
+            const activity = userData.analytics.recentActivities.find(a => a.id === activityId);
+            if (activity) {
+                showDeleteActivityModal(activity);
+            }
+        }
+    });
+}
+
+async function showAddActivityModal(studentId) {
+    const template = document.getElementById('add-activity-modal-template');
+    if (!template) return;
+    
+    const modalClone = template.content.cloneNode(true);
+    document.body.appendChild(modalClone);
+    
+    const modal = document.body.lastElementChild;
+    
+    // Load courses for the dropdown
+    await loadCoursesForModal('activity-course');
+    
+    // Setup form submission
+    const form = modal.querySelector('#add-activity-form');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        await handleAddActivity(e, studentId);
+    };
+    
+    // Setup modal close handlers
+    setupModalCloseHandlers(modal);
+}
+
+async function showEditActivityModal(activity) {
+    const template = document.getElementById('edit-activity-modal-template');
+    if (!template) return;
+    
+    const modalClone = template.content.cloneNode(true);
+    document.body.appendChild(modalClone);
+    
+    const modal = document.body.lastElementChild;
+    
+    // Pre-fill form with activity data
+    modal.querySelector('#edit-activity-id').value = activity.id;
+    modal.querySelector('#edit-activity-title').value = activity.title || '';
+    modal.querySelector('#edit-activity-type').value = activity.activityType || '';
+    modal.querySelector('#edit-activity-category').value = activity.category || '';
+    modal.querySelector('#edit-activity-description').value = activity.description || '';
+    modal.querySelector('#edit-activity-score').value = activity.score || '';
+    modal.querySelector('#edit-activity-max-score').value = activity.maxScore || '';
+    modal.querySelector('#edit-activity-duration').value = activity.duration || '';
+    modal.querySelector('#edit-activity-engagement').value = activity.engagementLevel || '';
+    
+    // Load courses and set selected value
+    await loadCoursesForModal('edit-activity-course');
+    modal.querySelector('#edit-activity-course').value = activity.courseId || '';
+    
+    // Setup form submission
+    const form = modal.querySelector('#edit-activity-form');
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        await handleEditActivity(e);
+    };
+    
+    // Setup modal close handlers
+    setupModalCloseHandlers(modal);
+}
+
+function showDeleteActivityModal(activity) {
+    const template = document.getElementById('delete-activity-modal-template');
+    if (!template) return;
+    
+    const modalClone = template.content.cloneNode(true);
+    document.body.appendChild(modalClone);
+    
+    const modal = document.body.lastElementChild;
+    
+    // Fill in activity details
+    modal.querySelector('#delete-activity-title').textContent = activity.title;
+    modal.querySelector('#delete-activity-details').innerHTML = `
+        <div class="text-sm text-secondary">
+            <div>Type: ${activity.activityType?.replace('_', ' ')}</div>
+            <div>Score: ${activity.score}/${activity.maxScore}</div>
+            <div>Date: ${new Date(activity.timestamp).toLocaleDateString()}</div>
+        </div>
+    `;
+    
+    // Setup delete confirmation
+    const confirmBtn = modal.querySelector('#confirm-delete-btn');
+    confirmBtn.onclick = () => handleDeleteActivity(activity.id);
+    
+    // Setup modal close handlers
+    setupModalCloseHandlers(modal);
+}
+
+async function handleAddActivity(event, studentId) {
+    const formData = new FormData(event.target);
+    const activityData = Object.fromEntries(formData.entries());
+    
+    // Generate unique ID
+    const activityId = 'activity_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
+    
+    // Prepare activity object
+    const newActivity = {
+        id: activityId,
+        studentId: studentId,
+        studentName: currentStudentData.displayName || currentStudentData.fullName,
+        studentEmail: currentStudentData.email,
+        ...activityData,
+        timestamp: new Date().toISOString(),
+        submissionTime: new Date().toISOString(),
+        score: parseInt(activityData.score) || 0,
+        maxScore: parseInt(activityData.maxScore) || 10,
+        duration: parseInt(activityData.duration) || 0,
+        engagementLevel: parseFloat(activityData.engagementLevel) || 5.0,
+        quality: Math.floor(Math.random() * 20) + 80, // Random quality score
+        difficulty: Math.random() * 5 + 1, // Random difficulty
+        feedback: "Activity added by admin",
+        status: "completed",
+        createdAt: new Date().toISOString()
+    };
+    
+    // Get course info if courseId is provided
+    if (activityData.courseId) {
+        try {
+            const course = await getCourseById(activityData.courseId);
+            if (course) {
+                newActivity.courseName = course.courseName;
+                newActivity.teacherId = course.teacherId;
+            }
+        } catch (error) {
+            console.warn('Could not fetch course info:', error);
+        }
+    }
+    
+    try {
+        // Add to Firebase
+        await addActivityToFirebase(newActivity);
+        
+        // Update local data and refresh UI
+        if (currentStudentData.analytics && currentStudentData.analytics.recentActivities) {
+            currentStudentData.analytics.recentActivities.unshift(newActivity);
+            loadUserActivitiesList(currentStudentData);
+        }
+        
+        // Close modal and show success message
+        closeModal(event.target.closest('.modal-backdrop'));
+        showAdvancedNotification('Activity added successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error adding activity:', error);
+        showAdvancedNotification('Failed to add activity. Please try again.', 'error');
+    }
+}
+
+async function handleEditActivity(event) {
+    const formData = new FormData(event.target);
+    const updatedData = Object.fromEntries(formData.entries());
+    const activityId = updatedData.activityId;
+    
+    // Prepare updated activity object
+    const updatedActivity = {
+        ...updatedData,
+        score: parseInt(updatedData.score) || 0,
+        maxScore: parseInt(updatedData.maxScore) || 10,
+        duration: parseInt(updatedData.duration) || 0,
+        engagementLevel: parseFloat(updatedData.engagementLevel) || 5.0,
+        updatedAt: new Date().toISOString()
+    };
+    
+    // Get course info if courseId is provided
+    if (updatedData.courseId) {
+        try {
+            const course = await getCourseById(updatedData.courseId);
+            if (course) {
+                updatedActivity.courseName = course.courseName;
+                updatedActivity.teacherId = course.teacherId;
+            }
+        } catch (error) {
+            console.warn('Could not fetch course info:', error);
+        }
+    }
+    
+    try {
+        // Update in Firebase
+        await updateActivityInFirebase(activityId, updatedActivity);
+        
+        // Update local data and refresh UI
+        if (currentStudentData.analytics && currentStudentData.analytics.recentActivities) {
+            const activityIndex = currentStudentData.analytics.recentActivities.findIndex(a => a.id === activityId);
+            if (activityIndex !== -1) {
+                currentStudentData.analytics.recentActivities[activityIndex] = {
+                    ...currentStudentData.analytics.recentActivities[activityIndex],
+                    ...updatedActivity
+                };
+                loadUserActivitiesList(currentStudentData);
+            }
+        }
+        
+        // Close modal and show success message
+        closeModal(event.target.closest('.modal-backdrop'));
+        showAdvancedNotification('Activity updated successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error updating activity:', error);
+        showAdvancedNotification('Failed to update activity. Please try again.', 'error');
+    }
+}
+
+async function handleDeleteActivity(activityId) {
+    try {
+        // Delete from Firebase
+        await deleteActivityFromFirebase(activityId);
+        
+        // Update local data and refresh UI
+        if (currentStudentData.analytics && currentStudentData.analytics.recentActivities) {
+            currentStudentData.analytics.recentActivities = currentStudentData.analytics.recentActivities.filter(a => a.id !== activityId);
+            loadUserActivitiesList(currentStudentData);
+        }
+        
+        // Close modal and show success message
+        const modal = document.querySelector('.modal-backdrop');
+        if (modal) closeModal(modal);
+        showAdvancedNotification('Activity deleted successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error deleting activity:', error);
+        showAdvancedNotification('Failed to delete activity. Please try again.', 'error');
+    }
+}
+
+// Firebase CRUD Operations
+async function addActivityToFirebase(activityData) {
+    try {
+        const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const { db } = await import('../firebase/firebase-config.js');
+        
+        const docRef = await addDoc(collection(db, 'activities'), activityData);
+        console.log('✅ Activity added to Firebase with ID:', docRef.id);
+        
+        // Update the activity with the Firebase document ID
+        activityData.id = docRef.id;
+        await updateActivityInFirebase(docRef.id, { id: docRef.id });
+        
+    } catch (error) {
+        console.error('❌ Error adding activity to Firebase:', error);
+        throw error;
+    }
+}
+
+async function updateActivityInFirebase(activityId, updatedData) {
+    try {
+        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const { db } = await import('../firebase/firebase-config.js');
+        
+        const activityRef = doc(db, 'activities', activityId);
+        await updateDoc(activityRef, updatedData);
+        console.log('✅ Activity updated in Firebase:', activityId);
+        
+    } catch (error) {
+        console.error('❌ Error updating activity in Firebase:', error);
+        throw error;
+    }
+}
+
+async function deleteActivityFromFirebase(activityId) {
+    try {
+        const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const { db } = await import('../firebase/firebase-config.js');
+        
+        const activityRef = doc(db, 'activities', activityId);
+        await deleteDoc(activityRef);
+        console.log('✅ Activity deleted from Firebase:', activityId);
+        
+    } catch (error) {
+        console.error('❌ Error deleting activity from Firebase:', error);
+        throw error;
+    }
+}
+
+// Helper Functions
+async function loadCoursesForModal(selectId) {
+    try {
+        const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const { db } = await import('../firebase/firebase-config.js');
+        
+        const coursesSnapshot = await getDocs(collection(db, 'courses'));
+        const courses = [];
+        coursesSnapshot.forEach(doc => {
+            courses.push({ id: doc.id, ...doc.data() });
+        });
+        
+        const select = document.getElementById(selectId);
+        if (select) {
+            select.innerHTML = '<option value="">Select Course</option>' +
+                courses.map(course => `<option value="${course.id}">${course.courseName}</option>`).join('');
+        }
+        
+    } catch (error) {
+        console.warn('Could not load courses:', error);
+    }
+}
+
+async function getCourseById(courseId) {
+    try {
+        const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
+        const { db } = await import('../firebase/firebase-config.js');
+        
+        const courseRef = doc(db, 'courses', courseId);
+        const courseSnap = await getDoc(courseRef);
+        
+        if (courseSnap.exists()) {
+            return { id: courseSnap.id, ...courseSnap.data() };
+        }
+        return null;
+        
+    } catch (error) {
+        console.error('Error fetching course:', error);
+        return null;
+    }
+}
+
+function setupModalCloseHandlers(modal) {
+    // Close button handlers
+    const closeButtons = modal.querySelectorAll('.modal-close-btn');
+    closeButtons.forEach(btn => {
+        btn.onclick = () => closeModal(modal);
+    });
+    
+    // Click outside to close
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeModal(modal);
+        }
+    };
+    
+    // Escape key to close
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeModal(modal);
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+
+function closeModal(modal) {
+    if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+    }
+}
+
 // Global utility functions for the enhanced admin dashboard
 window.AdminDashboard = {
     refreshStats: loadAdvancedSystemStats,
@@ -2633,3 +3050,11 @@ window.quickExport = quickExport;
 window.showGlobalSearchModal = showGlobalSearchModal;
 window.handleCreateUser = handleCreateUser;
 window.generateUserReport = generateUserReport;
+
+// Activity CRUD function exports
+window.showAddActivityModal = showAddActivityModal;
+window.showEditActivityModal = showEditActivityModal;
+window.showDeleteActivityModal = showDeleteActivityModal;
+window.handleAddActivity = handleAddActivity;
+window.handleEditActivity = handleEditActivity;
+window.handleDeleteActivity = handleDeleteActivity;
