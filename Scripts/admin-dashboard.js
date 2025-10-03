@@ -437,6 +437,10 @@ async function loadIntelligentUsersList() {
         const usersContainer = document.getElementById('users-list');
         const users = await getAllAdvancedUsers();
         
+        // Cache the user data globally for fast filtering
+        window.allUsersCache = users;
+        console.log(`📋 Cached ${users.length} users for fast filtering`);
+        
         if (users.length === 0) {
             usersContainer.innerHTML = `
                 <div class="text-center py-8 text-secondary">
@@ -1249,11 +1253,16 @@ function setupSearchFunctionality() {
     // Perform DSA Binary Search
     const performSearch = (query) => {
         if (!searchManager || !query.trim()) {
+            // Clear performance header when returning to all users
+            clearPerformanceAnalyticsHeader();
             displayAllUsers();
             hideSuggestions();
             hideSearchCounter();
             return;
         }
+        
+        // Clear performance analytics header when starting a search
+        clearPerformanceAnalyticsHeader();
         
         const startTime = performance.now();
         
@@ -2988,6 +2997,114 @@ function showGlobalSearchModal() {
 
 function filterUsersAdvanced(roleFilter) {
     console.log(`🔍 Filtering users by role: ${roleFilter}`);
+    
+    if (roleFilter === 'top-performance') {
+        // Use merge sort to show top performing students
+        showTopPerformanceStudents();
+        return;
+    }
+    
+    // Clear any performance analytics header when switching away from top performance
+    clearPerformanceAnalyticsHeader();
+    
+    // Show loading state briefly
+    const usersList = document.getElementById('users-list');
+    if (usersList) {
+        usersList.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: #666;">
+                <div style="margin-bottom: 10px; font-size: 24px;">🔄</div>
+                <p>Filtering ${roleFilter === 'all' ? 'all users' : roleFilter + 's'}...</p>
+            </div>
+        `;
+    }
+    
+    // Use a short timeout to allow the loading state to show, then apply filter immediately
+    setTimeout(() => {
+        // Check if we have cached user data
+        if (window.allUsersCache && window.allUsersCache.length > 0) {
+            console.log(`📊 Using cached data (${window.allUsersCache.length} users) for fast filtering`);
+            renderFilteredUsers(window.allUsersCache, roleFilter);
+        } else {
+            console.log('📊 No cached data available, loading from Firebase...');
+            // Only reload if we don't have cached data
+            loadIntelligentUsersList().then(() => {
+                // After loading, apply the filter using cached data
+                if (window.allUsersCache && window.allUsersCache.length > 0) {
+                    renderFilteredUsers(window.allUsersCache, roleFilter);
+                } else {
+                    // Fallback to the old method if caching fails
+                    applyRoleFilter(roleFilter);
+                }
+            });
+        }
+    }, 100); // Very short delay just to show the loading state briefly
+}
+
+/**
+ * Refresh the user cache (call this when users are added/updated/deleted)
+ */
+function refreshUserCache() {
+    console.log('🔄 Refreshing user cache...');
+    window.allUsersCache = null; // Clear cache to force reload
+    return loadIntelligentUsersList();
+}
+
+/**
+ * Render filtered users from cached data (no Firebase reload needed)
+ */
+function renderFilteredUsers(usersData, roleFilter) {
+    const usersList = document.getElementById('users-list');
+    if (!usersList) return;
+    
+    // Clear current content
+    usersList.innerHTML = '';
+    
+    let filteredUsers = [];
+    
+    if (roleFilter === 'all') {
+        filteredUsers = usersData;
+    } else {
+        // Filter users by role
+        filteredUsers = usersData.filter(user => {
+            const userRole = user.role ? user.role.toLowerCase() : 'student';
+            return userRole === roleFilter;
+        });
+    }
+    
+    console.log(`📊 Filtered ${filteredUsers.length} users for role: ${roleFilter}`);
+    
+    if (filteredUsers.length === 0 && roleFilter !== 'all') {
+        showEmptyFilterMessage(roleFilter);
+        return;
+    }
+    
+    // Render filtered users using the existing renderUserCard function
+    const userCardsHTML = filteredUsers.map(userData => renderUserCard(userData)).join('');
+    usersList.innerHTML = userCardsHTML;
+    
+    // Update user count
+    const userCounter = document.querySelector('#users-count, .users-count');
+    if (userCounter) {
+        if (roleFilter === 'all') {
+            userCounter.textContent = `${filteredUsers.length} users`;
+        } else {
+            userCounter.textContent = `${filteredUsers.length} of ${usersData.length} users (${roleFilter}s)`;
+        }
+    }
+    
+    // Hide search counter when not in performance mode
+    const searchCounter = document.getElementById('search-results-counter');
+    if (searchCounter) {
+        searchCounter.classList.add('hidden');
+    }
+    
+    showAdvancedNotification(`🔍 Showing ${filteredUsers.length} ${roleFilter === 'all' ? 'users' : roleFilter + 's'}`, 'success', 1500);
+}
+
+/**
+ * Apply role-based filtering to the current user list
+ */
+function applyRoleFilter(roleFilter) {
     showAdvancedNotification(`🔍 Filtering users by role: ${roleFilter}`, 'info', 1500);
     
     // Get all user cards
@@ -3018,6 +3135,232 @@ function filterUsersAdvanced(roleFilter) {
             userCounter.textContent = `${visibleCount} of ${userCards.length} users (${roleFilter}s)`;
         }
     }
+    
+    // Hide search counter when not in performance mode
+    const searchCounter = document.getElementById('search-results-counter');
+    if (searchCounter) {
+        searchCounter.classList.add('hidden');
+    }
+    
+    // If no users match the filter (like teachers with no data), show appropriate message
+    if (visibleCount === 0 && roleFilter !== 'all') {
+        showEmptyFilterMessage(roleFilter);
+    }
+}
+
+/**
+ * Show top performing students using DSA Merge Sort algorithm
+ */
+async function showTopPerformanceStudents() {
+    try {
+        console.log('🏆 Displaying top performing students using Merge Sort...');
+        showAdvancedNotification('🏆 Ranking students by performance using Merge Sort...', 'info', 2000);
+        
+        // Try to use cached data first for faster performance
+        let allUsers;
+        if (window.allUsersCache && window.allUsersCache.length > 0) {
+            console.log('📊 Using cached user data for performance ranking');
+            allUsers = window.allUsersCache;
+        } else {
+            console.log('📊 Loading fresh data for performance ranking');
+            allUsers = await getAllAdvancedUsers();
+            // Cache the data for future use
+            window.allUsersCache = allUsers;
+        }
+        
+        // Check if merge sort is available
+        if (!window.StudentMergeSort) {
+            console.error('❌ Merge Sort module not loaded');
+            showAdvancedNotification('❌ Performance ranking unavailable - Merge Sort module not loaded', 'error');
+            return;
+        }
+        
+        // Initialize performance analyzer
+        const analyzer = new window.StudentMergeSort.StudentPerformanceAnalyzer();
+        analyzer.initialize(allUsers);
+        
+        // Get ranked students using merge sort
+        const startTime = performance.now();
+        const rankedStudents = analyzer.getRankedStudents();
+        const endTime = performance.now();
+        
+        // Get performance statistics
+        const stats = analyzer.getPerformanceStats();
+        
+        if (rankedStudents.length === 0) {
+            showAdvancedNotification('📊 No student performance data available', 'warning');
+            
+            // Show empty state
+            const usersContainer = document.getElementById('users-list');
+            usersContainer.innerHTML = `
+                <div class="text-center py-8 text-secondary">
+                    <div class="text-4xl mb-3">🏆</div>
+                    <p>No student performance data available</p>
+                    <p class="text-sm mt-2">Students need engagement scores to appear in rankings</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Display ranked students using the modular renderUserCard function
+        const usersContainer = document.getElementById('users-list');
+        
+        // Add performance header with stats
+        const performanceHeader = `
+            <div class="performance-analytics-header bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        🏆 Top Performing Students
+                        <span class="text-sm font-normal text-gray-600">(Sorted by Engagement Score)</span>
+                    </h3>
+                    <div class="text-sm text-gray-600">
+                        ⚡ Merge Sort: ${(endTime - startTime).toFixed(2)}ms
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-2xl font-bold text-blue-600">${stats.totalStudents}</div>
+                        <div class="text-xs text-blue-800">Ranked Students</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-2xl font-bold text-green-600">${stats.topScore}</div>
+                        <div class="text-xs text-green-800">Top Score</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-2xl font-bold text-purple-600">${stats.averageScore}</div>
+                        <div class="text-xs text-purple-800">Average Score</div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3">
+                        <div class="text-2xl font-bold text-orange-600">${stats.topPerformersCount}</div>
+                        <div class="text-xs text-orange-800">Top 20%</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-xs text-gray-600 text-center">
+                    📊 Algorithm: Merge Sort O(n log n) | 🚀 Processing Time: ${stats.lastSortTime}ms
+                </div>
+            </div>
+        `;
+        
+        // Enhanced user cards with ranking information
+        const rankedUserCards = rankedStudents.map(student => {
+            // Add ranking badges to the student object for display
+            const enhancedStudent = {
+                ...student,
+                displayName: `#${student.ranking} ${student.displayName}`,
+                analytics: {
+                    ...student.analytics,
+                    ranking: student.ranking,
+                    percentile: student.percentile,
+                    isTopPerformer: student.isTopPerformer
+                }
+            };
+            
+            // Get the standard user card HTML
+            const cardHTML = renderUserCard(enhancedStudent);
+            
+            // Add ranking styling based on position
+            let rankingClass = '';
+            if (student.ranking === 1) rankingClass = 'border-l-4 border-gold bg-yellow-50';
+            else if (student.ranking === 2) rankingClass = 'border-l-4 border-silver bg-gray-50';
+            else if (student.ranking === 3) rankingClass = 'border-l-4 border-bronze bg-orange-50';
+            else if (student.isTopPerformer) rankingClass = 'border-l-4 border-blue-400 bg-blue-50';
+            
+            // Add ranking class to the card
+            return cardHTML.replace(
+                'class="user-card',
+                `class="user-card performance-ranked ${rankingClass}`
+            );
+        }).join('');
+        
+        usersContainer.innerHTML = performanceHeader + rankedUserCards;
+        
+        // Update search results counter if it exists
+        const searchCounter = document.getElementById('search-results-counter');
+        const searchCountText = document.getElementById('search-count-text');
+        if (searchCounter && searchCountText) {
+            searchCountText.textContent = `${rankedStudents.length} top performers (${stats.lastSortTime}ms)`;
+            searchCounter.classList.remove('hidden');
+        }
+        
+        console.log(`✅ Top performance ranking completed: ${rankedStudents.length} students ranked in ${stats.lastSortTime}ms`);
+        showAdvancedNotification(`🏆 ${rankedStudents.length} students ranked by performance (${stats.lastSortTime}ms)`, 'success', 3000);
+        
+    } catch (error) {
+        console.error('❌ Error displaying top performance students:', error);
+        showAdvancedNotification('❌ Failed to load performance rankings', 'error');
+    }
+}
+
+/**
+ * Clear performance analytics header when switching away from top performance view
+ */
+function clearPerformanceAnalyticsHeader() {
+    const usersContainer = document.getElementById('users-list');
+    if (!usersContainer) return;
+    
+    // Remove any existing performance analytics header
+    const performanceHeader = usersContainer.querySelector('.performance-analytics-header');
+    if (performanceHeader) {
+        performanceHeader.remove();
+        console.log('🧹 Cleared performance analytics header');
+    }
+    
+    // Remove any empty filter messages
+    const emptyMessage = usersContainer.querySelector('.empty-filter-message');
+    if (emptyMessage) {
+        emptyMessage.remove();
+        console.log('🧹 Cleared empty filter message');
+    }
+    
+    // Immediately hide all user cards to prevent flickering during transition
+    const allUserCards = usersContainer.querySelectorAll('.user-card');
+    allUserCards.forEach(card => {
+        card.style.display = 'none';
+    });
+    
+    // Remove performance ranking classes from all user cards
+    const performanceCards = usersContainer.querySelectorAll('.performance-ranked');
+    performanceCards.forEach(card => {
+        card.classList.remove('performance-ranked', 'border-l-4', 'border-gold', 'border-silver', 'border-bronze', 'border-blue-400', 'bg-yellow-50', 'bg-gray-50', 'bg-orange-50', 'bg-blue-50');
+    });
+}
+
+/**
+ * Show an empty filter message when no users match the selected role
+ */
+function showEmptyFilterMessage(roleFilter) {
+    const usersList = document.getElementById('users-list') || document.querySelector('.users-list');
+    if (!usersList) return;
+    
+    // Clear any existing content first
+    usersList.innerHTML = '';
+    
+    // Create empty state message
+    const emptyMessage = document.createElement('div');
+    emptyMessage.className = 'empty-filter-message';
+    emptyMessage.style.cssText = `
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        margin: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    `;
+    
+    const roleDisplayName = roleFilter.charAt(0).toUpperCase() + roleFilter.slice(1) + 's';
+    emptyMessage.innerHTML = `
+        <div style="margin-bottom: 20px; font-size: 48px;">📋</div>
+        <h3 style="margin: 0 0 10px 0; color: #333;">No ${roleDisplayName} Found</h3>
+        <p style="margin: 0; line-height: 1.5;">
+            There are currently no ${roleFilter}s in the system.<br>
+            This filter will display ${roleFilter}s when they are added to the database.
+        </p>
+    `;
+    
+    // Add the message
+    usersList.appendChild(emptyMessage);
 }
 
 function exportSystemAnalytics() {

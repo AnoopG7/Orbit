@@ -667,6 +667,37 @@ hr {
 }
 
 /* === PRINT STYLES === */
+/* === PERFORMANCE RANKING STYLES === */
+.performance-ranked {
+    transition: all 0.2s ease;
+}
+
+.performance-ranked:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.border-gold {
+    border-color: #ffd700 !important;
+}
+
+.border-silver {
+    border-color: #c0c0c0 !important;
+}
+
+.border-bronze {
+    border-color: #cd7f32 !important;
+}
+
+.performance-analytics-header {
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.performance-analytics-header .bg-white {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
 @media print {
     .no-print {
         display: none !important;
