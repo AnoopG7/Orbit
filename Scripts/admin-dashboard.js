@@ -1,5 +1,5 @@
-// Enhanced Admin Dashboard with Advanced Analytics, DSA Integration & System Intelligence
-// Import DSA algorithms and system analytics
+// Enhanced Admin Dashboard with Advanced Analytics & System Intelligence
+// Import system analytics
 import firebaseService from './firebase-service.js';
 import { db } from '../firebase/firebase-config.js';
 import { 
@@ -17,17 +17,13 @@ import {
     limit 
 } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
-let engagementAnalyzer, predictiveAnalyzer, recommendationEngine;
 let currentUser = null;
 let systemData = null;
 let realTimeUpdates = null;
 let realFirebaseData = null;
 
-// Load DSA modules and initialize advanced admin features
+// Initialize advanced admin features
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load comprehensive DSA algorithms for system-wide analytics
-    await loadAdvancedDSAModules();
-    
     // Enhanced authentication check with admin role validation
     const authResult = await AuthUtils.requireAuth();
     
@@ -38,36 +34,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Get full user profile with admin privileges
         const userProfile = await window.authManager.getUserProfile(user.uid);
+        await initializeSystemWideData();
         await initializeAdvancedAdminDashboard(user, userProfile);
     }
 });
-
-async function loadAdvancedDSAModules() {
-    try {
-        // Load all DSA algorithms with enhanced admin capabilities
-        if (typeof EngagementAnalyzer !== 'undefined') {
-            engagementAnalyzer = new EngagementAnalyzer();
-            console.log('✅ Advanced Engagement Analyzer loaded for admin');
-        }
-        
-        if (typeof PredictiveEngagementAnalyzer !== 'undefined') {
-            predictiveAnalyzer = new PredictiveEngagementAnalyzer();
-            console.log('✅ System-wide Predictive Analyzer loaded');
-        }
-        
-        if (typeof RecommendationEngine !== 'undefined') {
-            recommendationEngine = new RecommendationEngine();
-            console.log('✅ Institution Recommendation Engine loaded');
-        }
-        
-        // Initialize comprehensive system data for admin overview
-        await initializeSystemWideData();
-        
-    } catch (error) {
-        console.error('❌ Error loading advanced DSA modules:', error);
-        showAdvancedNotification('DSA modules failed to load. Some features may be limited.', 'warning', 5000);
-    }
-}
 
 async function initializeSystemWideData() {
     console.log('🔄 Initializing system-wide data with real Firebase data...');
@@ -114,43 +84,6 @@ async function loadRealFirebaseSystemData() {
             activities: activities.length
         });
 
-        // Initialize DSA algorithms with real data
-        if (engagementAnalyzer && activities.length > 0) {
-            activities.forEach(activity => {
-                engagementAnalyzer.addStudentActivity(activity.studentId, {
-                    studentId: activity.studentId,
-                    type: activity.activityType,
-                    timestamp: activity.timestamp,
-                    quality: activity.quality || 75,
-                    score: activity.score || 5,
-                    duration: activity.duration || 60
-                });
-            });
-            console.log('✅ Engagement Analyzer loaded with real Firebase activities');
-        }
-
-        // Initialize predictive analyzer
-        if (predictiveAnalyzer && students.length > 0) {
-            students.forEach(student => {
-                predictiveAnalyzer.analyzeStudentPatterns(student.id);
-            });
-            console.log('✅ Predictive Analyzer initialized with real student data');
-        }
-
-        // Initialize recommendation engine
-        if (recommendationEngine && activities.length > 0) {
-            activities.forEach(activity => {
-                if (activity.engagementLevel) {
-                    recommendationEngine.addStudentInteraction(
-                        activity.studentId, 
-                        activity.activityType, 
-                        activity.engagementLevel / 10
-                    );
-                }
-            });
-            console.log('✅ Recommendation Engine loaded with real activity data');
-        }
-
         // Store system overview data from real data
         systemData = {
             totalStudents: students.length,
@@ -190,11 +123,7 @@ async function initializeAdvancedAdminDashboard(user, userProfile) {
             loadAdvancedSystemStats(),
             loadIntelligentUsersList(),
             loadSystemWideActivityAnalytics(),
-            loadPredictiveSystemAlerts(),
-            loadEngagementHeatMaps(),
-            loadPerformanceMetrics(),
-            loadSystemHealthDashboard(),
-            loadRealTimeSystemMonitoring()
+            loadPredictiveSystemAlerts()
         ]);
         
         // Setup advanced event listeners and interactions
@@ -272,14 +201,19 @@ async function getAdvancedSystemStats() {
         const activeStudentIds = new Set(recentActivities.map(a => a.studentId));
         activeStudents = activeStudentIds.size;
         
-        // Calculate risk students using DSA algorithms
-        if (engagementAnalyzer && predictiveAnalyzer) {
-            const allStudents = engagementAnalyzer.getTopStudents(100);
-            riskStudents = allStudents.filter(student => {
-                const patterns = predictiveAnalyzer.analyzeStudentPatterns(student.studentId);
-                return patterns?.riskLevel === 'high' || (student.totalScore || 0) < 100;
-            }).length;
-        }
+        // Calculate risk students from real data (students with low engagement)
+        const studentEngagements = {};
+        activities.forEach(activity => {
+            if (!studentEngagements[activity.studentId]) {
+                studentEngagements[activity.studentId] = [];
+            }
+            studentEngagements[activity.studentId].push(activity.engagementLevel || 5);
+        });
+        
+        riskStudents = Object.entries(studentEngagements).filter(([studentId, engagements]) => {
+            const avgEngagement = engagements.reduce((sum, e) => sum + e, 0) / engagements.length;
+            return avgEngagement < 5.0; // Below average engagement
+        }).length;
         
         // Calculate completion rate from real data
         const completedActivities = activities.filter(a => a.status === 'completed').length;
@@ -319,26 +253,26 @@ async function getAdvancedSystemStats() {
             lastUpdated: new Date()
         };
         
-    } else if (engagementAnalyzer && systemData) {
-        console.log('📊 Using DSA-generated stats (sample data)');
+    } else {
+        console.log('📊 Using fallback stats (sample data)');
         
-        // Calculate from DSA algorithms with sample data
-        const allStudents = engagementAnalyzer.getTopStudents(100);
-        activeStudents = allStudents.filter(s => s.totalScore > 50).length;
-        totalActivities = allStudents.reduce((sum, s) => sum + (s.totalScore || 0), 0);
-        totalEngagement = totalActivities / Math.max(allStudents.length, 1);
-        
-        // Identify at-risk students using predictive analytics
-        if (predictiveAnalyzer) {
-            riskStudents = allStudents.filter(student => {
-                const patterns = predictiveAnalyzer.analyzeStudentPatterns(student.studentId);
-                return patterns?.riskLevel === 'high' || patterns?.trend === 'declining';
-            }).length;
+        // Fallback to basic sample data calculations
+        if (systemData) {
+            activeStudents = Math.floor(systemData.totalStudents * 0.7); // Assume 70% active
+            totalActivities = systemData.totalActivities || 150;
+            totalEngagement = 7.2; // Default engagement level
+            riskStudents = Math.floor(systemData.totalStudents * 0.15); // Assume 15% at risk
+        } else {
+            // Complete fallback
+            activeStudents = 42;
+            totalActivities = 150;
+            totalEngagement = 7.2;
+            riskStudents = 8;
         }
-        
+
         realStats = {
             // Basic stats from sample data
-            totalUsers: systemData.totalStudents + systemData.totalTeachers,
+            totalUsers: (systemData?.totalStudents || 50) + (systemData?.totalTeachers || 12),
             activeTeachers: systemData.totalTeachers,
             systemHealth: Math.floor(Math.random() * 5) + 95,
             storageUsed: (Math.random() * 3 + 2).toFixed(1),
@@ -829,7 +763,7 @@ async function getAdvancedSystemActivity() {
             timestamp: new Date(Date.now() - 10 * 60 * 1000),
             impact: 'Data insights',
             priority: 'medium',
-            details: 'DSA algorithms processing live student engagement data'
+            details: 'Advanced algorithms processing live student engagement data'
         }
     );
     
@@ -1042,24 +976,35 @@ async function getIntelligentSystemAlerts() {
     
     const alerts = [];
     
-    // AI-generated alerts based on DSA analysis
-    if (engagementAnalyzer && predictiveAnalyzer) {
-        const allStudents = engagementAnalyzer.getTopStudents(100);
-        const riskStudents = allStudents.filter(student => {
-            const patterns = predictiveAnalyzer.analyzeStudentPatterns(student.studentId);
-            return patterns?.riskLevel === 'high' || (student.totalScore || 0) < 100;
+    // Generate alerts based on real Firebase data
+    if (realFirebaseData && realFirebaseData.activities) {
+        const activities = realFirebaseData.activities;
+        const students = realFirebaseData.students || [];
+        
+        // Check for students with low engagement
+        const studentEngagements = {};
+        activities.forEach(activity => {
+            if (!studentEngagements[activity.studentId]) {
+                studentEngagements[activity.studentId] = [];
+            }
+            studentEngagements[activity.studentId].push(activity.engagementLevel || 5);
         });
         
-        if (riskStudents.length > 5) {
+        const riskStudents = Object.entries(studentEngagements).filter(([studentId, engagements]) => {
+            const avgEngagement = engagements.reduce((sum, e) => sum + e, 0) / engagements.length;
+            return avgEngagement < 5.0;
+        });
+        
+        if (riskStudents.length > 3) {
             alerts.push({
                 id: 'risk_students_alert',
                 severity: 'warning',
                 type: 'engagement',
                 title: `${riskStudents.length} Students at Risk`,
-                message: 'AI analysis detected multiple students with declining engagement patterns',
+                message: 'Analysis detected multiple students with declining engagement patterns',
                 recommendation: 'Deploy targeted intervention programs and personalized support',
                 affectedUsers: `${riskStudents.length} students across multiple courses`,
-                aiGenerated: true,
+                aiGenerated: false,
                 priority: 'high',
                 timestamp: new Date(Date.now() - 10 * 60 * 1000),
                 actionRequired: true,
@@ -1068,8 +1013,13 @@ async function getIntelligentSystemAlerts() {
             });
         }
         
-        const highPerformers = allStudents.filter(s => (s.totalScore || 0) > 400);
-        if (highPerformers.length > 10) {
+        // Check for high performers
+        const highPerformers = Object.entries(studentEngagements).filter(([studentId, engagements]) => {
+            const avgEngagement = engagements.reduce((sum, e) => sum + e, 0) / engagements.length;
+            return avgEngagement > 8.0;
+        });
+        
+        if (highPerformers.length > 5) {
             alerts.push({
                 id: 'high_performers_alert',
                 severity: 'success',
@@ -1139,27 +1089,6 @@ function getAdvancedAlertIcon(severity, type) {
         info: 'ℹ️'
     };
     return icons[severity] || icons.info;
-}
-
-// New advanced admin functions
-async function loadEngagementHeatMaps() {
-    // Implementation for engagement heatmaps
-    console.log('📊 Loading engagement heatmaps...');
-}
-
-async function loadPerformanceMetrics() {
-    // Implementation for performance metrics
-    console.log('🎯 Loading performance metrics...');
-}
-
-async function loadSystemHealthDashboard() {
-    // Implementation for system health dashboard
-    console.log('🖥️ Loading system health dashboard...');
-}
-
-async function loadRealTimeSystemMonitoring() {
-    // Implementation for real-time monitoring
-    console.log('⚡ Loading real-time system monitoring...');
 }
 
 async function getSystemAlerts() {
@@ -1387,10 +1316,8 @@ function showAdvancedNotification(message, type = 'info', duration = 3000) {
 // Enhanced utility functions
 async function updateRealTimeMetrics() {
     // Update real-time metrics without full page reload
-    if (engagementAnalyzer) {
-        const currentStats = await getAdvancedSystemStats();
-        updateMetricDisplays(currentStats);
-    }
+    const currentStats = await getAdvancedSystemStats();
+    updateMetricDisplays(currentStats);
 }
 
 async function refreshActivityFeed() {
