@@ -122,8 +122,36 @@
                         <!-- User Management -->
                         <div class="card" style="margin-bottom: 3rem;">
                             <div class="card-header">
-                                <div class="flex justify-between items-center">
+                                <div class="flex justify-between items-center mb-4">
                                     <h3 class="card-title">User Management</h3>
+                                    
+                                    <!-- Search Field with DSA Binary Search -->
+                                    <div class="relative" style="max-width: 400px; flex-grow: 1; margin: 0 2rem;">
+                                        <div class="relative">
+                                            <input 
+                                                type="text" 
+                                                id="student-search-input" 
+                                                class="form-input pl-10 pr-4" 
+                                                placeholder="🔍 Search students by name (first/last), email, or ID"
+                                                autocomplete="off"
+                                                spellcheck="false"
+                                            >
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                                </svg>
+                                            </div>
+                                            <!-- Search Results Counter -->
+                                            <div id="search-results-counter" class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm text-gray-500 hidden">
+                                                <span id="search-count-text">0 results</span>
+                                            </div>
+                                        </div>
+                                        <!-- Auto-complete Suggestions -->
+                                        <div id="search-suggestions" class="absolute z-10 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                                            <!-- Suggestions will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                    
                                     <div class="flex gap-2">
                                         <select id="role-filter" class="form-select" style="width: auto;">
                                             <option value="all">All Roles</option>
@@ -688,7 +716,9 @@
             <button id="refresh-all-btn" class="btn btn-sm bg-gray-100" title="Refresh All (Ctrl+R)">🔄</button>
         </div>
     </div>
-
+    <!-- DSA Search Implementation -->
+    <script src="../DSA/search.js"></script>
+    
     <!-- Admin Dashboard Script -->
     <script type="module" src="../Scripts/admin-dashboard.js"></script>
 

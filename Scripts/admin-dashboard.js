@@ -445,6 +445,11 @@ async function loadIntelligentUsersList() {
             </div>
         `).join('');
         
+        // Refresh search data after loading users
+        if (typeof window.refreshSearchData === 'function') {
+            setTimeout(() => window.refreshSearchData(), 100);
+        }
+        
     } catch (error) {
         console.error('❌ Error loading intelligent users list:', error);
         document.getElementById('users-list').innerHTML = `
@@ -1192,13 +1197,229 @@ function setupAdvancedAdminEventListeners() {
 }
 
 function setupSearchFunctionality() {
-    // Add global search functionality
+    // Initialize DSA Search Manager
+    let searchManager = null;
+    let currentSearchResults = [];
+    let allUsers = [];
+    
+    // Initialize the search manager with current users
+    const initializeSearch = async () => {
+        try {
+            allUsers = await getAllAdvancedUsers();
+            searchManager = new window.StudentSearch.StudentSearchManager();
+            searchManager.initialize(allUsers);
+            console.log('✅ DSA Search Manager initialized with', allUsers.length, 'users');
+        } catch (error) {
+            console.error('❌ Failed to initialize search manager:', error);
+        }
+    };
+    
+    // Initialize search on page load
+    initializeSearch();
+    
+    // Get search input and related elements
+    const searchInput = document.getElementById('student-search-input');
+    const searchSuggestions = document.getElementById('search-suggestions');
+    const searchCounter = document.getElementById('search-results-counter');
+    const searchCountText = document.getElementById('search-count-text');
+    
+    if (!searchInput) {
+        console.warn('⚠️ Search input not found');
+        return;
+    }
+    
+    // Debounce function for better performance
+    const debounce = (func, wait) => {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    };
+    
+    // Perform DSA Binary Search
+    const performSearch = (query) => {
+        if (!searchManager || !query.trim()) {
+            displayAllUsers();
+            hideSuggestions();
+            hideSearchCounter();
+            return;
+        }
+        
+        const startTime = performance.now();
+        
+        // Use DSA Binary Search to find matching users
+        currentSearchResults = searchManager.search(query.trim());
+        
+        const endTime = performance.now();
+        const searchTime = (endTime - startTime).toFixed(2);
+        
+        console.log(`🔍 Binary Search completed in ${searchTime}ms for query: "${query}"`);
+        console.log(`📊 Found ${currentSearchResults.length} results using DSA Binary Search`);
+        
+        // Display search results
+        displaySearchResults(currentSearchResults);
+        updateSearchCounter(currentSearchResults.length, searchTime);
+        
+        // Show search suggestions
+        if (query.length >= 2) {
+            showSearchSuggestions(query);
+        } else {
+            hideSuggestions();
+        }
+    };
+    
+    // Display search results in the users list
+    const displaySearchResults = (results) => {
+        const usersContainer = document.getElementById('users-list');
+        
+        if (results.length === 0) {
+            usersContainer.innerHTML = `
+                <div class="text-center py-8 text-secondary">
+                    <div class="text-4xl mb-3">🔍</div>
+                    <p>No users found matching your search</p>
+                    <p class="text-sm mt-2">Try searching by name, email, or ID</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Use the existing user display logic but with filtered results
+        usersContainer.innerHTML = results.map(user => `
+            <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" data-user-email="${user.email}" onclick="viewUserAnalytics('${user.id}')">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">
+                            ${getUserInitials(user.displayName)}
+                        </div>
+                        ${user.isOnline ? '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
+                    </div>
+                    <div>
+                        <p class="font-medium flex items-center gap-2">
+                            ${user.displayName}
+                            ${user.analytics?.isHighPerformer ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">⭐ Top Performer</span>' : ''}
+                            ${user.analytics?.isAtRisk ? '<span class="text-xs bg-red-100 text-red-800 px-1 rounded">⚠️ At Risk</span>' : ''}
+                        </p>
+                        <p class="text-sm text-secondary">${user.email}</p>
+                        <p class="text-xs text-tertiary capitalize">
+                            ${user.role} • ${user.analytics?.totalActivities || 0} activities
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                        Score: ${user.analytics?.engagementScore || 'N/A'}
+                    </span>
+                    <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); viewUserAnalytics('${user.id}')">
+                        View
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    };
+    
+    // Display all users (when search is cleared)
+    const displayAllUsers = () => {
+        if (allUsers.length > 0) {
+            displaySearchResults(allUsers);
+        }
+    };
+    
+    // Show search suggestions using DSA
+    const showSearchSuggestions = (query) => {
+        if (!searchManager || query.length < 2) {
+            hideSuggestions();
+            return;
+        }
+        
+        const suggestions = searchManager.getSuggestions(query, 5);
+        
+        if (suggestions.length === 0) {
+            hideSuggestions();
+            return;
+        }
+    };
+    
+    // Hide search suggestions
+    const hideSuggestions = () => {
+        if (searchSuggestions) {
+            searchSuggestions.classList.add('hidden');
+        }
+    };
+    
+    // Update search results counter
+    const updateSearchCounter = (count, searchTime) => {
+        if (searchCounter && searchCountText) {
+            searchCountText.textContent = `${count} results (${searchTime}ms)`;
+            searchCounter.classList.remove('hidden');
+        }
+    };
+    
+    // Hide search counter
+    const hideSearchCounter = () => {
+        if (searchCounter) {
+            searchCounter.classList.add('hidden');
+        }
+    };
+    
+    // Select suggestion function (make it global)
+    window.selectSuggestion = (suggestion) => {
+        searchInput.value = suggestion;
+        performSearch(suggestion);
+        hideSuggestions();
+        searchInput.focus();
+    };
+    
+    // Debounced search function
+    const debouncedSearch = debounce(performSearch, 300);
+    
+    // Event listeners for search input
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value;
+        debouncedSearch(query);
+    });
+    
+    // Handle keyboard navigation for suggestions
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            hideSuggestions();
+            searchInput.blur();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch(searchInput.value);
+            hideSuggestions();
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            hideSuggestions();
+        }
+    });
+    
+    // Global search shortcut (Ctrl+F)
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'f') {
             e.preventDefault();
-            showGlobalSearchModal();
+            searchInput.focus();
+            searchInput.select();
         }
     });
+    
+    // Refresh search data when users are updated
+    window.refreshSearchData = async () => {
+        await initializeSearch();
+        if (searchInput.value.trim()) {
+            performSearch(searchInput.value);
+        }
+    };
+    
+    console.log('✅ DSA Binary Search functionality initialized');
 }
 
 function setupKeyboardShortcuts() {
@@ -1251,7 +1472,8 @@ function addAdminToolbar() {
         // Add event listeners to toolbar buttons
         document.getElementById('show-system-status-btn').addEventListener('click', showSystemStatus);
         document.getElementById('quick-export-btn').addEventListener('click', quickExport);
-        document.getElementById('show-global-search-btn').addEventListener('click', showGlobalSearchModal);
+        // Temporarily disable global search modal
+        // document.getElementById('show-global-search-btn').addEventListener('click', showGlobalSearchModal);
         document.getElementById('refresh-all-btn').addEventListener('click', refreshAllData);
     }
 }
@@ -2766,7 +2988,7 @@ function quickExport() {
     }, 2000);
 }
 
-function showGlobalSearchModal() {
+function showGlobalSearchModal() {    
     const template = document.getElementById('global-search-modal-template');
     const modal = template.content.cloneNode(true);
     
