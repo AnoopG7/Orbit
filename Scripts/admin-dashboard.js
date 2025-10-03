@@ -383,6 +383,55 @@ async function getSystemStats() {
     };
 }
 
+// Reusable user card template function
+function renderUserCard(user) {
+    return `
+        <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" data-user-email="${user.email}" onclick="viewUserAnalytics('${user.id}')">
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">
+                        ${getUserInitials(user.displayName)}
+                    </div>
+                    ${user.isOnline ? '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
+                </div>
+                <div>
+                    <p class="font-medium flex items-center gap-2">
+                        ${user.displayName}
+                        ${user.analytics?.isHighPerformer ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">⭐ Top Performer</span>' : ''}
+                        ${user.analytics?.isAtRisk ? '<span class="text-xs bg-red-100 text-red-800 px-1 rounded">⚠️ At Risk</span>' : ''}
+                    </p>
+                    <p class="text-sm text-secondary flex items-center gap-4">
+                        <span>${user.email}</span>
+                        ${user.role === 'student' ? `<span class="text-xs">📊 Engagement: ${user.analytics?.engagementScore || 'N/A'}</span>` : ''}
+                        ${user.lastActive ? `<span class="text-xs">🕒 ${formatTime(user.lastActive)}</span>` : ''}
+                    </p>
+                    ${user.analytics?.insights ? `<p class="text-xs text-blue-600 mt-1">${user.analytics.insights}</p>` : ''}
+                </div>
+            </div>
+            <div class="flex items-center gap-3" onclick="event.stopPropagation()">
+                <div class="text-right">
+                    <span class="badge badge-${getRoleBadgeColor(user.role)}">${user.role.toUpperCase()}</span>
+                    ${user.role === 'student' && user.analytics?.totalActivities ? 
+                        `<div class="text-xs text-muted mt-1">${user.analytics.totalActivities} activities</div>` : ''}
+                </div>
+                <div class="flex gap-1">
+                    <button class="btn btn-ghost btn-sm" onclick="viewUserAnalytics('${user.id}')" title="View Details">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-ghost btn-sm text-error" onclick="deleteUser('${user.id}')" title="Delete User">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function loadIntelligentUsersList() {
     try {
         const usersContainer = document.getElementById('users-list');
@@ -399,51 +448,7 @@ async function loadIntelligentUsersList() {
         }
         
         // Enhanced user display with analytics insights
-        usersContainer.innerHTML = users.map(user => `
-            <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" data-user-email="${user.email}" onclick="viewUserAnalytics('${user.id}')">
-                <div class="flex items-center gap-4">
-                    <div class="relative">
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">
-                            ${getUserInitials(user.displayName)}
-                        </div>
-                        ${user.isOnline ? '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
-                    </div>
-                    <div>
-                        <p class="font-medium flex items-center gap-2">
-                            ${user.displayName}
-                            ${user.analytics?.isHighPerformer ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">⭐ Top Performer</span>' : ''}
-                            ${user.analytics?.isAtRisk ? '<span class="text-xs bg-red-100 text-red-800 px-1 rounded">⚠️ At Risk</span>' : ''}
-                        </p>
-                        <p class="text-sm text-secondary flex items-center gap-4">
-                            <span>${user.email}</span>
-                            ${user.role === 'student' ? `<span class="text-xs">📊 Engagement: ${user.analytics?.engagementScore || 'N/A'}</span>` : ''}
-                            ${user.lastActive ? `<span class="text-xs">🕒 ${formatTime(user.lastActive)}</span>` : ''}
-                        </p>
-                        ${user.analytics?.insights ? `<p class="text-xs text-blue-600 mt-1">${user.analytics.insights}</p>` : ''}
-                    </div>
-                </div>
-                <div class="flex items-center gap-3" onclick="event.stopPropagation()">
-                    <div class="text-right">
-                        <span class="badge badge-${getRoleBadgeColor(user.role)}">${user.role.toUpperCase()}</span>
-                        ${user.role === 'student' && user.analytics?.totalActivities ? 
-                            `<div class="text-xs text-muted mt-1">${user.analytics.totalActivities} activities</div>` : ''}
-                    </div>
-                    <div class="flex gap-1">
-                        <button class="btn btn-ghost btn-sm" onclick="viewUserAnalytics('${user.id}')" title="View Details">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                        </button>
-                        <button class="btn btn-ghost btn-sm text-error" onclick="deleteUser('${user.id}')" title="Delete User">
-                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        usersContainer.innerHTML = users.map(user => renderUserCard(user)).join('');
         
         // Refresh search data after loading users
         if (typeof window.refreshSearchData === 'function') {
@@ -1288,38 +1293,8 @@ function setupSearchFunctionality() {
             return;
         }
         
-        // Use the existing user display logic but with filtered results
-        usersContainer.innerHTML = results.map(user => `
-            <div class="user-card user-card-${user.role} flex items-center justify-between cursor-pointer" data-user-email="${user.email}" onclick="viewUserAnalytics('${user.id}')">
-                <div class="flex items-center gap-4">
-                    <div class="relative">
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-r ${getUserGradient(user.role)} text-white flex items-center justify-center font-bold text-sm">
-                            ${getUserInitials(user.displayName)}
-                        </div>
-                        ${user.isOnline ? '<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>' : ''}
-                    </div>
-                    <div>
-                        <p class="font-medium flex items-center gap-2">
-                            ${user.displayName}
-                            ${user.analytics?.isHighPerformer ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-1 rounded">⭐ Top Performer</span>' : ''}
-                            ${user.analytics?.isAtRisk ? '<span class="text-xs bg-red-100 text-red-800 px-1 rounded">⚠️ At Risk</span>' : ''}
-                        </p>
-                        <p class="text-sm text-secondary">${user.email}</p>
-                        <p class="text-xs text-tertiary capitalize">
-                            ${user.role} • ${user.analytics?.totalActivities || 0} activities
-                        </p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                        Score: ${user.analytics?.engagementScore || 'N/A'}
-                    </span>
-                    <button class="btn btn-sm btn-outline" onclick="event.stopPropagation(); viewUserAnalytics('${user.id}')">
-                        View
-                    </button>
-                </div>
-            </div>
-        `).join('');
+        // Use the same modular user card template
+        usersContainer.innerHTML = results.map(user => renderUserCard(user)).join('');
     };
     
     // Display all users (when search is cleared)
