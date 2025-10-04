@@ -228,6 +228,7 @@ interface Activity {
   category: ActivityCategory;    // NEW: Dashboard category (1 of 5)
   title: string;                 // Activity title/name
   description: string;           // Detailed description
+  date: string;                  // Activity date in ISO format (compatibility field)
   timestamp: Date;               // Activity occurrence time
   submissionTime: Date;          // Actual submission time
   score: number;                 // Points earned (0-10)
@@ -275,6 +276,7 @@ type ActivityCategory =
   "category": "Assignment Uploads",
   "title": "Data Structures & Algorithms Assignment #3",
   "description": "Completed and submitted assignment with detailed solutions",
+  "date": "2024-09-25T14:30:00.000Z",
   "timestamp": "2024-09-25T14:30:00.000Z",
   "submissionTime": "2024-09-25T13:45:00.000Z",
   "score": 8,
@@ -428,6 +430,7 @@ db.activities.createIndex({ "studentId": 1 });
 db.activities.createIndex({ "studentEmail": 1 });        // NEW: Email-based queries
 db.activities.createIndex({ "courseId": 1 });
 db.activities.createIndex({ "timestamp": -1 });
+db.activities.createIndex({ "date": -1 });               // NEW: Date field index
 db.activities.createIndex({ "activityType": 1 });
 db.activities.createIndex({ "category": 1 });            // NEW: Category-based queries
 db.activities.createIndex({ "engagementLevel": -1 });
