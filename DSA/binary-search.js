@@ -1,4 +1,13 @@
 /**
+ * DSA Implementation: Binary Search Algorithms for Student Search & Lookup
+ * Time Complexity: O(log n) for binary search operations
+ * Space Complexity: O(1) for search operations, O(n) for sorted arrays
+ * 
+ * Purpose: Efficiently search and find students by various criteria
+ * Use Cases: Student lookup, auto-complete, multi-field search, user interface search
+ */
+
+/**
  * Binary Search for Students
  * Time Complexity: O(log n)
  * Space Complexity: O(1)
@@ -371,9 +380,9 @@ if (typeof module !== 'undefined' && module.exports) {
     };
 }
 
-// Make functions available globally for browser use
+// Make functions available globally for browser use with updated naming
 if (typeof window !== 'undefined') {
-    window.StudentSearch = {
+    window.StudentBinarySearch = {
         binarySearchStudents,
         binarySearchStudentsPrefix,
         multiFieldSearch,

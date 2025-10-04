@@ -1216,20 +1216,20 @@ function setupAdvancedAdminEventListeners() {
 }
 
 function setupSearchFunctionality() {
-    // Initialize DSA Search Manager
+    // Initialize DSA Binary Search Manager
     let searchManager = null;
     let currentSearchResults = [];
     let allUsers = [];
     
-    // Initialize the search manager with current users
+    // Initialize the binary search manager with current users
     const initializeSearch = async () => {
         try {
             allUsers = await getAllAdvancedUsers();
-            searchManager = new window.StudentSearch.StudentSearchManager();
+            searchManager = new window.StudentBinarySearch.StudentSearchManager();
             searchManager.initialize(allUsers);
-            console.log('✅ DSA Search Manager initialized with', allUsers.length, 'users');
+            console.log('✅ DSA Binary Search Manager initialized with', allUsers.length, 'users');
         } catch (error) {
-            console.error('❌ Failed to initialize search manager:', error);
+            console.error('❌ Failed to initialize binary search manager:', error);
         }
     };
     
