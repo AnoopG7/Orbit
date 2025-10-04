@@ -121,8 +121,7 @@ Orbit/
 ├── 📁 components/                # Reusable UI components
 │   ├── 📄 navbar.html           # Navigation component
 │   ├── 📄 navbar.js             # Navigation logic
-│   ├── 📄 footer.html           # Footer component
-│   └── 📄 footer.js             # Footer logic
+│   └── 📄 footer.html           # Footer component
 │
 ├── 📁 pages/                     # Application pages
 │   ├── 📄 login.html            # Authentication page
