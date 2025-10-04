@@ -2,6 +2,10 @@
 // Import system analytics
 import firebaseService from './firebase-service.js';
 import { db } from '../firebase/firebase-config.js';
+
+// Load BST module dynamically
+let StudentEngagementBST = null;
+let globalEngagementBST = null;
 import { 
     getFirestore, 
     collection, 
@@ -24,6 +28,9 @@ let realFirebaseData = null;
 
 // Initialize advanced admin features
 document.addEventListener('DOMContentLoaded', async () => {
+    // Load BST module
+    await loadBSTModule();
+    
     // Enhanced authentication check with admin role validation
     const authResult = await AuthUtils.requireAuth();
     
@@ -36,6 +43,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userProfile = await window.authManager.getUserProfile(user.uid);
         await initializeSystemWideData();
         await initializeAdvancedAdminDashboard(user, userProfile);
+        
+        // Initialize BST features
+        initializeBSTFeatures();
     }
 });
 
@@ -3798,6 +3808,406 @@ window.exportTeacherData = exportTeacherData;
 
 // Activity CRUD function exports
 window.showAddActivityModal = showAddActivityModal;
+
+// =======================
+// BST ENGAGEMENT ANALYSIS
+// =======================
+
+/**
+ * Load BST module dynamically
+ */
+async function loadBSTModule() {
+    try {
+        // Load BST script dynamically
+        const script = document.createElement('script');
+        script.src = '../DSA/BST.js';
+        script.onload = () => {
+            StudentEngagementBST = window.StudentEngagementBST;
+            console.log('🌳 BST module loaded successfully');
+        };
+        script.onerror = () => {
+            console.error('❌ Failed to load BST module');
+        };
+        document.head.appendChild(script);
+        
+        // Wait for script to load
+        await new Promise((resolve) => {
+            const checkLoaded = () => {
+                if (window.StudentEngagementBST) {
+                    resolve();
+                } else {
+                    setTimeout(checkLoaded, 100);
+                }
+            };
+            checkLoaded();
+        });
+    } catch (error) {
+        console.error('❌ Error loading BST module:', error);
+    }
+}
+
+/**
+ * Initialize BST features and event listeners
+ */
+function initializeBSTFeatures() {
+    console.log('🌳 Initializing BST features...');
+    
+    // Initialize global BST instance
+    if (StudentEngagementBST) {
+        globalEngagementBST = new StudentEngagementBST();
+        console.log('🌳 Global BST instance created');
+    }
+    
+    // Add event listeners (removed analyze button listener)
+    const refreshBtn = document.getElementById('refresh-bst-btn');
+    const viewFilter = document.getElementById('bst-view-filter');
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshEngagementAnalysis);
+    }
+    
+    if (viewFilter) {
+        viewFilter.addEventListener('change', filterEngagementResults);
+    }
+    
+    console.log('🌳 BST event listeners initialized');
+    
+    // Automatically run engagement analysis on load
+    setTimeout(() => {
+        console.log('🚀 Auto-starting engagement analysis...');
+        analyzeStudentEngagement();
+    }, 1000); // Wait 1 second for data to be loaded
+}
+
+/**
+ * Calculate engagement score for a student
+ * SIMPLIFIED: Score = Activity Count (using REAL Firebase data, not synthetic)
+ */
+function calculateEngagementScore(userData) {
+    if (!userData) return 0;
+    
+    // Use REAL activity count from Firebase data (consistent with user management)
+    let activityCount = 0;
+    
+    // First, try to get the real activity count from analytics (already calculated by user management)
+    if (userData.analytics && typeof userData.analytics.totalActivities === 'number') {
+        activityCount = userData.analytics.totalActivities;
+        console.log(`✅ Using real Firebase activity count for ${userData.email || userData.displayName}: ${activityCount} activities`);
+    }
+    // Fallback: try to count activities directly from activities array
+    else if (userData.activities && Array.isArray(userData.activities)) {
+        activityCount = userData.activities.length;
+        console.log(`📊 Counting activities array for ${userData.email || userData.displayName}: ${activityCount} activities`);
+    }
+    // Last resort: if no real data, return 0 (don't generate fake data)
+    else {
+        console.log(`⚠️ No activity data found for ${userData.email || userData.displayName}, using 0`);
+        activityCount = 0;
+    }
+    
+    return activityCount; // Score = REAL Activity Count from Firebase
+}
+
+// Removed generateActivityCount function - now using REAL Firebase data only
+
+/**
+ * Analyze student engagement using BST
+ */
+async function analyzeStudentEngagement() {
+    console.log('🌳 Starting engagement analysis with BST...');
+    
+    const resultsContainer = document.getElementById('bst-results');
+    const statsContainer = document.getElementById('engagement-stats');
+    
+    if (!globalEngagementBST || !StudentEngagementBST) {
+        console.error('❌ BST not initialized');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        resultsContainer.innerHTML = `
+            <div class="text-center py-8 text-secondary">
+                <div class="text-4xl mb-3">🔄</div>
+                <p>Building BST and analyzing engagement scores...</p>
+            </div>
+        `;
+        
+        // Clear existing BST
+        globalEngagementBST.clear();
+        
+        // Get all users data - USE THE SAME DATA AS USER MANAGEMENT (no separate loading)
+        let allUsers = [];
+        if (window.allUsersCache && window.allUsersCache.length > 0) {
+            console.log('✅ Using cached user data from user management (consistent data!)');
+            allUsers = window.allUsersCache;
+        } else {
+            console.log('🔄 Loading fresh user data to match user management...');
+            allUsers = await getAllAdvancedUsers(); // Use the same function as user management
+            window.allUsersCache = allUsers; // Cache it for consistency
+        }
+        
+        // Filter only students
+        const students = allUsers.filter(user => user.role === 'student');
+        console.log(`🎓 Found ${students.length} students for engagement analysis`);
+        
+        // Debug: Log first student data structure
+        if (students.length > 0) {
+            console.log('📊 Sample student data structure:', students[0]);
+        }
+        
+        if (students.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-8 text-secondary">
+                    <div class="text-4xl mb-3">👥</div>
+                    <p>No students found for engagement analysis</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Build BST with engagement scores
+        students.forEach(student => {
+            // Calculate engagement score using REAL Firebase data (no synthetic generation)
+            const userId = student.id || student.uid || student.studentId || student.email || 'unknown';
+            const engagementScore = calculateEngagementScore(student);
+            
+            // Extract student name with multiple fallback options
+            let studentName = 'Unknown Student';
+            if (student.displayName) {
+                studentName = student.displayName;
+            } else if (student.fullName) {
+                studentName = student.fullName;
+            } else if (student.firstName && student.lastName) {
+                studentName = `${student.firstName} ${student.lastName}`;
+            } else if (student.firstName) {
+                studentName = student.firstName;
+            } else if (student.name) {
+                studentName = student.name;
+            } else if (student.email) {
+                // Extract name from email as last resort
+                studentName = student.email.split('@')[0];
+            }
+            
+            const studentData = {
+                ...student, // Pass all real student data
+                name: studentName,
+                displayName: studentName,
+                email: student.email || '',
+                // Use real Firebase data for course/program info
+                course: student.analytics?.insights || student.major || student.department || student.grade || 'General',
+                lastActive: student.lastActive || student.lastLogin || student.lastSeen || new Date(),
+                joinDate: student.joinDate || student.createdAt || student.registrationDate || new Date(),
+                role: student.role || 'student',
+                activityCount: engagementScore, // Real activity count from Firebase (same as engagement score)
+                analytics: student.analytics || {} // Include full analytics data
+            };
+            
+            globalEngagementBST.insert(userId, engagementScore, studentData);
+        });
+        
+        console.log(`🌳 BST built with ${globalEngagementBST.getSize()} students`);
+        
+        // Get categories and statistics
+        const categories = globalEngagementBST.categorize();
+        const stats = globalEngagementBST.getEngagementStats();
+        
+        // Update statistics display
+        updateEngagementStatistics(stats, categories);
+        
+        // Display categorized results
+        displayEngagementResults(categories, 'all');
+        
+        console.log('✅ Engagement analysis completed successfully');
+        
+    } catch (error) {
+        console.error('❌ Error during engagement analysis:', error);
+        resultsContainer.innerHTML = `
+            <div class="text-center py-8 text-red-500">
+                <div class="text-4xl mb-3">❌</div>
+                <p>Error analyzing engagement: ${error.message}</p>
+            </div>
+        `;
+    } finally {
+        // No button state to reset since we removed the analyze button
+        console.log('🌳 Engagement analysis process completed');
+    }
+}
+
+// Removed loadAllUsersForBST function - now using getAllAdvancedUsers() for consistency
+
+/**
+ * Update engagement statistics display
+ */
+function updateEngagementStatistics(stats, categories) {
+    const statsContainer = document.getElementById('engagement-stats');
+    
+    if (statsContainer) {
+        // Update counts
+        document.getElementById('high-count').textContent = categories.high.length;
+        document.getElementById('medium-count').textContent = categories.medium.length;
+        document.getElementById('low-count').textContent = categories.low.length;
+        document.getElementById('average-score').textContent = stats.average;
+        
+        // Show stats container
+        statsContainer.classList.remove('hidden');
+    }
+}
+
+/**
+ * Display engagement results based on category
+ */
+function displayEngagementResults(categories, filterType = 'all') {
+    const resultsContainer = document.getElementById('bst-results');
+    
+    let studentsToShow = [];
+    let title = '';
+    let emptyMessage = '';
+    
+    switch (filterType) {
+        case 'high':
+            studentsToShow = categories.high;
+            title = '🚀 High Engagement Students (15+ activities)';
+            emptyMessage = 'No high engagement students found';
+            break;
+        case 'medium':
+            studentsToShow = categories.medium;
+            title = '📊 Medium Engagement Students (5-14 activities)';
+            emptyMessage = 'No medium engagement students found';
+            break;
+        case 'low':
+            studentsToShow = categories.low;
+            title = '⚠️ Low Engagement Students (0-4 activities)';
+            emptyMessage = 'No low engagement students found';
+            break;
+        default:
+            studentsToShow = [...categories.high, ...categories.medium, ...categories.low];
+            title = '🌳 All Students by Engagement Level';
+            emptyMessage = 'No students found';
+    }
+    
+    if (studentsToShow.length === 0) {
+        resultsContainer.innerHTML = `
+            <div class="text-center py-8 text-secondary">
+                <div class="text-4xl mb-3">📊</div>
+                <p>${emptyMessage}</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort by score (descending)
+    studentsToShow.sort((a, b) => b.score - a.score);
+    
+    // Create results HTML
+    let resultsHTML = `
+        <div class="mb-4">
+            <h4 class="text-lg font-semibold">${title}</h4>
+            <p class="text-sm text-secondary">Showing ${studentsToShow.length} students</p>
+        </div>
+        <div class="space-y-3">
+    `;
+    
+    studentsToShow.forEach((student, index) => {
+        const scoreColor = getScoreColor(student.score);
+        const rank = index + 1;
+        
+        resultsHTML += `
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl font-bold text-gray-400 dark:text-gray-500">#${rank}</div>
+                        <div>
+                            <div class="font-semibold">${student.studentData.displayName || student.studentData.name || 'Unknown Student'}</div>
+                            <div class="text-sm text-secondary">${student.studentData.email || 'No email'}</div>
+                            <div class="text-xs text-secondary mt-1">
+                                📚 ${student.studentData.analytics?.insights || student.studentData.major || 'Unknown Course'} • 
+                                🎯 ${student.score} activities • 
+                                🕒 Last active: ${formatDate(student.studentData.lastActive || new Date())}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold ${scoreColor}">${student.score}</div>
+                        <div class="text-sm ${scoreColor}">${getEngagementLevel(student.score)}</div>
+                        <div class="text-xs text-secondary mt-1">
+                            Based on activity count
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsHTML += '</div>';
+    resultsContainer.innerHTML = resultsHTML;
+}
+
+/**
+ * Get color class based on activity count
+ */
+function getScoreColor(score) {
+    if (score >= 15) return 'text-green-600 dark:text-green-400';  // 15+ activities = High
+    if (score >= 5) return 'text-yellow-600 dark:text-yellow-400'; // 5-14 activities = Medium
+    return 'text-red-600 dark:text-red-400';                       // 0-4 activities = Low
+}
+
+/**
+ * Get engagement level text based on activity count
+ */
+function getEngagementLevel(score) {
+    if (score >= 15) return 'High';   // 15+ activities
+    if (score >= 5) return 'Medium';  // 5-14 activities
+    return 'Low';                     // 0-4 activities
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(date) {
+    if (!date || date === 'Never' || date === 'Unknown') return date;
+    
+    try {
+        const dateObj = new Date(date);
+        return dateObj.toLocaleDateString();
+    } catch {
+        return date;
+    }
+}
+
+/**
+ * Refresh engagement analysis
+ */
+async function refreshEngagementAnalysis() {
+    console.log('🔄 Refreshing engagement analysis...');
+    
+    // Clear cache to force fresh data
+    window.allUsersCache = null;
+    
+    // Run analysis again
+    await analyzeStudentEngagement();
+}
+
+/**
+ * Filter engagement results
+ */
+function filterEngagementResults() {
+    const filterSelect = document.getElementById('bst-view-filter');
+    const filterValue = filterSelect.value;
+    
+    if (!globalEngagementBST || globalEngagementBST.isEmpty()) {
+        console.log('⚠️ No BST data to filter');
+        return;
+    }
+    
+    const categories = globalEngagementBST.categorize();
+    displayEngagementResults(categories, filterValue);
+}
+
+// Export BST functions globally
+window.analyzeStudentEngagement = analyzeStudentEngagement;
+window.refreshEngagementAnalysis = refreshEngagementAnalysis;
+window.filterEngagementResults = filterEngagementResults;
 window.showEditActivityModal = showEditActivityModal;
 window.showDeleteActivityModal = showDeleteActivityModal;
 window.handleAddActivity = handleAddActivity;
