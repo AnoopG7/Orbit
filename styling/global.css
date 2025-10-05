@@ -418,6 +418,11 @@ hr {
 .text-warning { color: var(--accent-warning); }
 .text-error { color: var(--accent-error); }
 
+/* Light text colors for dark backgrounds */
+.text-white { color: #ffffff; }
+.text-light { color: var(--grey-200); }
+.text-light-muted { color: var(--grey-300); }
+
 .uppercase { text-transform: uppercase; }
 .lowercase { text-transform: lowercase; }
 .capitalize { text-transform: capitalize; }
