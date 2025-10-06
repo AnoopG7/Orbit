@@ -1,7 +1,33 @@
 /**
- * DSA Implementation: Binary Search Tree for Student Engagement Analysis
- * Time Complexity: O(log n) average, O(n) worst case for operations
- * Space Complexity: O(n) for tree storage, O(h) for recursion stack
+ * ========================================
+ * BINARY SEARCH TREE (BST) - STUDENT ENGAGEMENT ANALYTICS ENGINE
+ * ========================================
+ * 
+ * OVERVIEW:
+ * Advanced Binary Search Tree implementation designed specifically for student
+ * engagement analysis and performance categorization in educational platforms.
+ * Transforms raw activity data into meaningful engagement insights through
+ * efficient tree-based operations and intelligent score categorization.
+ * 
+ * CORE FEATURES:
+ * • 🌳 Self-Organizing BST Structure - Automatic student insertion by engagement scores
+ * • 📊 Smart Categorization System - Low/Medium/High engagement level grouping
+ * • 📈 Real-time Analytics Engine - Statistical analysis with O(log n) performance
+ * • 🎯 Performance Optimization - Balanced tree operations for large datasets
+ * • 📋 Comprehensive Statistics - Mean, median, distribution, and trend analysis
+ * • 🔍 Range Query Support - Efficient student filtering by score ranges
+ * 
+ * ENGAGEMENT CATEGORIZATION LOGIC:
+ * • Low Engagement (🔴): 0-4 activities - Students requiring immediate attention
+ * • Medium Engagement (🟡): 5-14 activities - Average performing students
+ * • High Engagement (🟢): 15+ activities - Top performing students
+ * 
+ * ALGORITHM COMPLEXITY:
+ * • Insertion: O(log n) average, O(n) worst case (unbalanced tree)
+ * • Search: O(log n) average, O(n) worst case
+ * • Categorization: O(n) single traversal for all students
+ * • Statistics: O(n) with memoization for repeated calls
+ * • Space: O(n) for tree storage, O(h) for recursion stack
  * 
  * Purpose: Efficiently categorize and analyze students by engagement scores
  * Use Cases: Performance ranking, engagement analytics, score-based grouping
@@ -412,33 +438,3 @@ if (typeof window !== 'undefined') {
     // Node.js environment
     module.exports = { StudentEngagementBST, StudentNode };
 }
-
-// Example usage (commented out for production)
-/*
-// Create BST instance
-const engagementBST = new StudentEngagementBST();
-
-// Insert students with engagement scores
-engagementBST.insert("S1", 55, {name: "Alice", course: "CS101"});
-engagementBST.insert("S2", 25, {name: "Bob", course: "CS101"});
-engagementBST.insert("S3", 85, {name: "Charlie", course: "CS102"});
-engagementBST.insert("S4", 45, {name: "Diana", course: "CS101"});
-engagementBST.insert("S5", 95, {name: "Eve", course: "CS102"});
-
-// Get sorted students
-const sortedStudents = engagementBST.inOrderTraversal();
-console.log('Sorted by score:', sortedStudents);
-
-// Categorize by engagement level
-const categories = engagementBST.categorize();
-console.log('High performers:', categories.high);
-console.log('Medium performers:', categories.medium);
-console.log('Low performers:', categories.low);
-
-// Get engagement statistics
-const stats = engagementBST.getEngagementStats();
-console.log('Engagement stats:', stats);
-
-// Display tree structure
-engagementBST.display();
-*/

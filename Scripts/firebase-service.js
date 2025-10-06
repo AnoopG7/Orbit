@@ -1,3 +1,21 @@
+/**
+ * FIREBASE SERVICE - Comprehensive Data Layer with Analytics
+ * 
+ * This service acts as the main data access layer between the application and Firebase Firestore.
+ * It provides cached data operations, real-time analytics, and comprehensive student management
+ * functionality with built-in performance optimizations.
+ * 
+ * Key Features:
+ * - Intelligent caching system (5-minute expiry) to reduce Firebase costs
+ * - Complete CRUD operations for students, teachers, courses, and activities
+ * - Advanced analytics: engagement trends, performance metrics, system statistics
+ * - Real-time data listeners for live dashboard updates
+ * - Batch operations and query optimizations for scalability
+ * 
+ * Used by: All dashboards, CRM system, analytics components, admin panels
+ * Global Access: window.firebaseService
+ */
+
 // Firebase Service Module
 // Handles all Firebase operations for fetching real data
 

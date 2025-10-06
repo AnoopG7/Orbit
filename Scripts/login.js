@@ -1,3 +1,22 @@
+/**
+ * LOGIN PAGE CONTROLLER - Authentication Interface Manager
+ * 
+ * This file orchestrates the complete authentication user experience on the login page.
+ * It manages login, signup, password reset forms with comprehensive validation,
+ * Google authentication, and seamless user workflow transitions.
+ * 
+ * Key Features:
+ * - Multi-form interface (login, signup, password reset)
+ * - Real-time form validation with visual feedback
+ * - Password strength indicators and visibility controls
+ * - Google OAuth integration and error handling
+ * - Smart redirect logic and authentication state detection
+ * - Loading states, animations, and user experience enhancements
+ * 
+ * Used by: /pages/login.html for all authentication workflows
+ * Dependencies: firebase/app.js (authManager), firebase/auth.js (AuthUtils)
+ */
+
 // Login Page JavaScript functionality
 function waitForFirebase() {
     return new Promise((resolve) => {

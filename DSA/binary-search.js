@@ -1,4 +1,23 @@
 /**
+ * BINARY SEARCH ALGORITHMS - Student Search & Lookup System
+ * 
+ * This file implements optimized binary search algorithms specifically designed for
+ * efficiently searching and filtering students by various criteria. It provides
+ * fast O(log n) search operations for large student datasets.
+ * 
+ * Key Features:
+ * - Binary search for students by any property (name, email, ID)
+ * - Prefix matching for auto-complete functionality
+ * - Multi-field search across name, email, and ID fields
+ * - Case-insensitive searching with partial word matching
+ * - Search manager class with pre-sorted data optimization
+ * - Support for nested property access and flexible data structures
+ * 
+ * Used by: Student dashboards, admin panels, CRM search functionality
+ * Global Access: window.StudentBinarySearch
+ */
+
+/**
  * DSA Implementation: Binary Search Algorithms for Student Search & Lookup
  * Time Complexity: O(log n) for binary search operations
  * Space Complexity: O(1) for search operations, O(n) for sorted arrays

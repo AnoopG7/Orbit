@@ -1,3 +1,22 @@
+/**
+ * AUTHENTICATION UTILITIES - Frontend Auth Helpers & UI Components
+ * 
+ * This file provides comprehensive frontend utilities for authentication workflows.
+ * It handles form validation, UI interactions, security checks, and user experience
+ * enhancements for all authentication-related pages.
+ * 
+ * Key Features:
+ * - Page protection and authentication guards
+ * - Real-time form validation with visual feedback
+ * - Password strength indicators and visibility toggles
+ * - Toast notifications and loading states
+ * - User-friendly error handling and messaging
+ * - Form data persistence and theme-aware styling
+ * 
+ * Used by: Login pages, signup forms, password reset, protected dashboards
+ * Global Access: window.AuthUtils, window.FormValidator
+ */
+
 // Authentication Utilities
 class AuthUtils {
 

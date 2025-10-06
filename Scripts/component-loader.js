@@ -1,3 +1,22 @@
+/**
+ * COMPONENT LOADER - Dynamic HTML Component System
+ * 
+ * This system enables modular, component-based architecture by dynamically loading
+ * reusable HTML components (navbar, footer, etc.) into pages. It provides caching,
+ * script execution, and auto-loading capabilities for maintainable web applications.
+ * 
+ * Key Features:
+ * - Dynamic HTML component loading with intelligent caching
+ * - Auto-loading via data attributes (data-component="path")
+ * - Script execution within loaded components
+ * - Parallel component loading for performance
+ * - Loading states, error handling, and fallback support
+ * - Event system for component lifecycle management
+ * 
+ * Used by: All pages for navbar/footer, modular UI components
+ * Global Access: window.componentLoader, window.loadComponent
+ */
+
 // Component Loader - Dynamically loads HTML components
 class ComponentLoader {
     constructor() {

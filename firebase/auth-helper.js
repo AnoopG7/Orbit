@@ -1,3 +1,20 @@
+/**
+ * FIREBASE AUTH HELPER - Anonymous Authentication for Data Operations
+ * 
+ * This utility provides lightweight anonymous authentication specifically for background
+ * data operations that don't require user accounts. It's designed for scripts and 
+ * operations that need Firebase access without full user authentication.
+ * 
+ * Key Features:
+ * - Anonymous user authentication for data access
+ * - Automatic authentication state management
+ * - Timeout protection and error handling
+ * - Ensures Firebase operations cannot proceed without user login
+ * 
+ * Used by: Data population scripts, background operations, public data access
+ * Global Access: window.firebaseAuthHelper
+ */
+
 // Firebase Authentication Helper
 // Provides simple authentication for data operations
 

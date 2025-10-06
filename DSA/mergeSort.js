@@ -1,4 +1,23 @@
 /**
+ * MERGE SORT ALGORITHMS - Student Performance Ranking System
+ * 
+ * This file implements merge sort algorithms optimized for ranking students by
+ * engagement scores and performance metrics. It provides stable, efficient O(n log n)
+ * sorting with comprehensive analytics for educational data.
+ * 
+ * Key Features:
+ * - Merge sort for students by engagement scores (descending order)
+ * - Student ranking with percentile calculations and top performer identification
+ * - Performance analytics class with real-time sorting metrics
+ * - Flexible score extraction from various data structures
+ * - Top performer analysis and comprehensive statistics generation
+ * - Performance timing and optimization tracking
+ * 
+ * Used by: Admin dashboards, performance analytics, student leaderboards
+ * Global Access: window.StudentMergeSort
+ */
+
+/**
  * Merge Sort for Students by Engagement Score
  * Time Complexity: O(n log n)
  * Space Complexity: O(n)

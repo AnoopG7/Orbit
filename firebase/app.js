@@ -1,3 +1,20 @@
+/**
+ * FIREBASE APP - Central Authentication Hub
+ * 
+ * This file serves as the main Firebase integration layer for the Orbit student management system.
+ * It provides comprehensive user authentication, session management, and user profile operations.
+ * 
+ * Key Features:
+ * - Email/password and Google OAuth authentication
+ * - User registration with email verification
+ * - Automatic user profile creation in Firestore
+ * - Session state management and dashboard routing
+ * - User-friendly error handling and messaging
+ * 
+ * Used by: Login pages, dashboards, and any component requiring authentication
+ * Global Access: window.authManager
+ */
+
 // Firebase App Initialization and Core Functions
 import { app, auth, db } from '/firebase/firebase-config.js';
 import { 

@@ -1,8 +1,50 @@
 /**
- * Student Dashboard - Activity Tracking System
- * Tracks 5 main activities: Assignment Uploads, Event Participation, 
- * Class Participation, Peer Collaboration, Quiz Performance
- * All data fetched dynamically from Firestore with Chart.js visualizations
+ * ========================================
+ * STUDENT DASHBOARD - PERSONAL ACTIVITY TRACKING SYSTEM
+ * ========================================
+ * 
+ * OVERVIEW:
+ * Comprehensive student activity tracking dashboard that monitors and visualizes
+ * personal academic engagement across 5 core activity categories. Provides
+ * real-time insights into learning progress with interactive charts and timelines.
+ * 
+ * CORE FEATURES:
+ * • 🔐 Firebase Authentication Integration - Secure student login with role-based access
+ * • 📊 5-Category Activity Tracking - Assignments, Events, Participation, Collaboration, Quizzes
+ * • 📈 Chart.js Visualizations - Activity trends and performance distribution charts
+ * • ⏰ Real-time Timeline - Chronological activity feed with detailed metadata
+ * • 🎯 Personal Analytics - Individual progress tracking and engagement metrics
+ * • 📱 Responsive Design - Optimized for desktop and mobile viewing
+ * 
+ * ACTIVITY CATEGORIES:
+ * 1. Assignment Uploads (📝) - Project submissions, code reviews, homework
+ * 2. Event Participation (🎉) - Workshops, seminars, presentations attended
+ * 3. Class Participation (🎓) - Questions asked, discussions, active engagement
+ * 4. Peer Collaboration (👥) - Group projects, study sessions, peer interactions
+ * 5. Quiz Performance (🧠) - Test results, assessment scores, knowledge checks
+ * 
+ * TECHNICAL ARCHITECTURE:
+ * • Authentication: Firebase Auth with anonymous fallback support
+ * • Database: Firestore real-time collections (students, activities, courses)
+ * • Charts: Chart.js with custom themes and responsive configuration
+ * • Components: Modular HTML template system with dynamic loading
+ * • Security: Role-based data filtering and user isolation
+ * 
+ * DATA INTEGRATION:
+ * • Real-time Firestore synchronization for instant updates
+ * • Cross-referenced student records with activity categorization
+ * • Intelligent date parsing and trend calculation algorithms
+ * • Performance analytics with completion rates and score averaging
+ * 
+ * NAVIGATION FEATURES:
+ * • Modal-based detailed activity views with comprehensive metadata
+ * • Interactive timeline with clickable activity cards
+ * • Responsive activity statistics with trend indicators
+ * • Dynamic loading states and empty state management
+ * 
+ * Created: 2024 | Framework: Vanilla JS + Firebase v10.7.0 + Chart.js
+ * Purpose: Student engagement tracking and personal academic analytics
+ * Author: Orbit Education Management System
  */
 
 // Global variables for the new activity tracking system

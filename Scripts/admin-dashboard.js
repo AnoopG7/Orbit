@@ -1,3 +1,26 @@
+/**
+ * ADMIN DASHBOARD - Advanced System Management & Analytics Platform
+ * 
+ * This file powers the comprehensive admin dashboard for the Orbit student management system.
+ * It provides real-time system monitoring, user management, advanced analytics, and 
+ * administrative controls with intelligent insights and data visualization.
+ * 
+ * Key Features:
+ * - Real-time system statistics and health monitoring
+ * - Advanced user management with CRUD operations and detailed analytics
+ * - Binary Search Tree (BST) implementation for student engagement analysis
+ * - Merge Sort algorithms for performance ranking and data analysis
+ * - Interactive data visualizations with Chart.js integration
+ * - Predictive alerts and intelligent system recommendations
+ * - Comprehensive activity tracking and timeline management
+ * - Role-based access control and security features
+ * - Data export capabilities and system backup functionality
+ * 
+ * Used by: System administrators and educational managers
+ * Dependencies: firebase-service.js, DSA algorithms (BST, MergeSort), Chart.js
+ * Global Access: window.AdminDashboard
+ */
+
 // Enhanced Admin Dashboard with Advanced Analytics & System Intelligence
 // Import system analytics
 import firebaseService from './firebase-service.js';

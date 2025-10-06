@@ -38,10 +38,10 @@ The system is built around 4 core modules working in harmony:
 
 | Algorithm/Structure | Purpose | Business Justification | Technical Advantage |
 |-------------------|---------|----------------------|-------------------|
-| **Binary Search** | Student lookup by ID/name | Admins need instant student access during calls/meetings | O(log n) vs O(n) - 1000x faster for 1000+ students |
-| **Binary Search Tree** | Engagement categorization | Identify at-risk vs high-performing students quickly | Efficient range queries and sorted traversal |
-| **Merge Sort** | Performance ranking | Generate fair leaderboards and percentile rankings | Guaranteed O(n log n) - stable and predictable |
-| **HashMap** | Activity mapping | Associate student IDs with their activity records | O(1) lookup for real-time dashboard updates |
+| **Binary Search (BS)** | Student lookup by ID/name | Admins need instant student access during calls/meetings | O(log n) vs O(n) - 1000x faster for 1000+ students |
+| **Binary Search Tree (BST)** | Engagement categorization | Identify at-risk vs high-performing students quickly | Efficient range queries and sorted traversal |
+| **Merge Sort (MS)** | Performance ranking | Generate fair leaderboards and percentile rankings | Guaranteed O(n log n) - stable and predictable |
+
 
 ### Algorithm Complexity Comparison
 
